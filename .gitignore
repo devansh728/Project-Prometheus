@@ -1,0 +1,118 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Data & Models (large files)
+data/models/
+data/vectordb/
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+
+# SQLite Database
+*.db
+*.sqlite
+*.sqlite3
+data/sentinev.db
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Frontend (Next.js)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.pnp
+frontend/.pnp.js
+frontend/.yarn/
+
+# Build artifacts
+frontend/build/
+*.tsbuildinfo
+
+# System
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets
+*.pem
+*.key
+*.crt
+ssl/
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Docker
+.docker/
+
+# Chroma
+chroma_data/
+
+*.md

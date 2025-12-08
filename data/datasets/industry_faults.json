@@ -1,0 +1,1192 @@
+[
+    {
+        "fault_id": "EV-F001",
+        "component": "battery",
+        "error_code": "P0A1F",
+        "fault_name": "Battery Pack Overtemperature",
+        "description": "Battery pack temperature exceeds safe operating limit of 60°C, indicating cooling system failure or excessive load",
+        "symptoms": [
+            "High battery temperature",
+            "Reduced power output",
+            "Thermal warning on dashboard",
+            "Battery cooling fan running at maximum"
+        ],
+        "trigger_conditions": {
+            "battery_temp_c": {
+                "min": 55,
+                "critical": 60
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Immediately reduce power load, pull over safely, allow battery to cool",
+        "rca_category": "Thermal Management",
+        "occurrence_rate": 0.023
+    },
+    {
+        "fault_id": "EV-F002",
+        "component": "battery",
+        "error_code": "P0A80",
+        "fault_name": "Cell Voltage Imbalance",
+        "description": "Individual cell voltages differ by more than 0.3V, indicating cell degradation or BMS fault",
+        "symptoms": [
+            "Inconsistent range estimates",
+            "Slower charging",
+            "Premature power reduction",
+            "Battery health degradation warning"
+        ],
+        "trigger_conditions": {
+            "cell_voltage_diff_v": {
+                "min": 0.2,
+                "critical": 0.3
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Schedule battery diagnostic, avoid fast charging until inspection",
+        "rca_category": "Battery Health",
+        "occurrence_rate": 0.018
+    },
+    {
+        "fault_id": "EV-F003",
+        "component": "battery",
+        "error_code": "P0A7F",
+        "fault_name": "Hybrid Battery Pack Cooling Fan Failure",
+        "description": "Battery cooling fan not operating or operating below expected speed",
+        "symptoms": [
+            "Rising battery temperature during normal driving",
+            "Fan noise absent",
+            "Thermal throttling at lower loads"
+        ],
+        "trigger_conditions": {
+            "cooling_fan_rpm": {
+                "max": 500
+            },
+            "battery_temp_c": {
+                "min": 45
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Check coolant levels and fan operation, service cooling system",
+        "rca_category": "Cooling System",
+        "occurrence_rate": 0.012
+    },
+    {
+        "fault_id": "EV-F004",
+        "component": "motor",
+        "error_code": "P0A0D",
+        "fault_name": "Motor Inverter Overtemperature",
+        "description": "Inverter temperature exceeds safe operating limit, affecting motor control",
+        "symptoms": [
+            "Power derating",
+            "Motor performance reduction",
+            "Inverter temperature warning"
+        ],
+        "trigger_conditions": {
+            "inverter_temp_c": {
+                "min": 75,
+                "critical": 85
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "High-Performance EVs"
+        ],
+        "recommended_action": "Reduce power demand, check inverter cooling circuit",
+        "rca_category": "Power Electronics",
+        "occurrence_rate": 0.015
+    },
+    {
+        "fault_id": "EV-F005",
+        "component": "motor",
+        "error_code": "P0A1A",
+        "fault_name": "Motor Resolver Position Sensor Fault",
+        "description": "Motor position sensor reading outside expected range or intermittent signal",
+        "symptoms": [
+            "Motor hesitation",
+            "Inconsistent power delivery",
+            "Jerky acceleration",
+            "Motor control fault warning"
+        ],
+        "trigger_conditions": {
+            "resolver_error": true,
+            "resolver_drift_deg": {
+                "min": 2
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Immediate service required, avoid high-speed driving",
+        "rca_category": "Motor Control",
+        "occurrence_rate": 0.008
+    },
+    {
+        "fault_id": "EV-F006",
+        "component": "brakes",
+        "error_code": "C1A00",
+        "fault_name": "Brake System Overtemperature",
+        "description": "Brake disc or caliper temperature exceeds safe limit, often from aggressive driving or stuck caliper",
+        "symptoms": [
+            "Reduced braking efficiency",
+            "Brake fade",
+            "Burning smell",
+            "ABS activation at lower speeds"
+        ],
+        "trigger_conditions": {
+            "brake_temp_c": {
+                "min": 300,
+                "critical": 400
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Stop safely, allow brakes to cool, inspect for dragging calipers",
+        "rca_category": "Brake System",
+        "occurrence_rate": 0.025
+    },
+    {
+        "fault_id": "EV-F007",
+        "component": "brakes",
+        "error_code": "C1A10",
+        "fault_name": "Regenerative Braking System Fault",
+        "description": "Regenerative braking not functioning correctly or efficiency below threshold",
+        "symptoms": [
+            "Increased energy consumption",
+            "Reduced range",
+            "Heavier brake pedal feel",
+            "Regen indicator off"
+        ],
+        "trigger_conditions": {
+            "regen_efficiency": {
+                "max": 0.5
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Service regen system, check brake pedal sensor",
+        "rca_category": "Energy Recovery",
+        "occurrence_rate": 0.032
+    },
+    {
+        "fault_id": "EV-F008",
+        "component": "cooling",
+        "error_code": "P0A3F",
+        "fault_name": "Coolant Level Low",
+        "description": "EV cooling system coolant level below minimum threshold",
+        "symptoms": [
+            "Thermal warnings appearing",
+            "Gradual temperature rise",
+            "Coolant warning light",
+            "Pump noise changes"
+        ],
+        "trigger_conditions": {
+            "coolant_level_pct": {
+                "max": 20
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Check for leaks, top up coolant, schedule service",
+        "rca_category": "Cooling System",
+        "occurrence_rate": 0.020
+    },
+    {
+        "fault_id": "EV-F009",
+        "component": "cooling",
+        "error_code": "P0A4F",
+        "fault_name": "Coolant Pump Failure",
+        "description": "Electric coolant pump not operating or operating below expected flow rate",
+        "symptoms": [
+            "Rapid temperature rise",
+            "No pump noise",
+            "Multiple thermal warnings",
+            "Limp mode activation"
+        ],
+        "trigger_conditions": {
+            "coolant_flow_lpm": {
+                "max": 2
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Stop driving immediately, tow to service center",
+        "rca_category": "Cooling System",
+        "occurrence_rate": 0.007
+    },
+    {
+        "fault_id": "EV-F010",
+        "component": "inverter",
+        "error_code": "P0A0A",
+        "fault_name": "Inverter IGBT Fault",
+        "description": "Power transistor (IGBT) in inverter showing abnormal behavior",
+        "symptoms": [
+            "Power fluctuations",
+            "Motor noise",
+            "Reduced acceleration",
+            "Inverter fault indicator"
+        ],
+        "trigger_conditions": {
+            "inverter_fault_flag": true
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace inverter module, do not drive",
+        "rca_category": "Power Electronics",
+        "occurrence_rate": 0.005
+    },
+    {
+        "fault_id": "EV-F011",
+        "component": "battery",
+        "error_code": "P0A82",
+        "fault_name": "High Voltage Isolation Fault",
+        "description": "Insulation resistance between HV system and chassis below safe threshold",
+        "symptoms": [
+            "HV warning light",
+            "Reduced power",
+            "System shutdown possible",
+            "Moisture ingress suspected"
+        ],
+        "trigger_conditions": {
+            "isolation_resistance_mohm": {
+                "max": 100
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Stop immediately, do not touch HV components, call service",
+        "rca_category": "High Voltage Safety",
+        "occurrence_rate": 0.003
+    },
+    {
+        "fault_id": "EV-F012",
+        "component": "battery",
+        "error_code": "P0A83",
+        "fault_name": "Battery SOC Calculation Error",
+        "description": "State of Charge calculation deviating from actual, affecting range estimates",
+        "symptoms": [
+            "Inaccurate range display",
+            "Sudden range drops",
+            "Charging stops early or late",
+            "SOC jumps"
+        ],
+        "trigger_conditions": {
+            "soc_deviation_pct": {
+                "min": 10
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Perform full charge cycle, recalibrate BMS",
+        "rca_category": "Battery Management",
+        "occurrence_rate": 0.028
+    },
+    {
+        "fault_id": "EV-F013",
+        "component": "charging",
+        "error_code": "P0A84",
+        "fault_name": "Onboard Charger Fault",
+        "description": "AC-DC converter not functioning correctly during charging",
+        "symptoms": [
+            "Slow charging",
+            "Charging stops unexpectedly",
+            "Charger hot",
+            "Error on charge port indicator"
+        ],
+        "trigger_conditions": {
+            "charging_power_kw": {
+                "max": 3
+            },
+            "charging_active": true
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Try different charging station, service onboard charger",
+        "rca_category": "Charging System",
+        "occurrence_rate": 0.015
+    },
+    {
+        "fault_id": "EV-F014",
+        "component": "charging",
+        "error_code": "P0A85",
+        "fault_name": "DC Fast Charging Communication Error",
+        "description": "CCS/CHAdeMO communication protocol failure during DC fast charging",
+        "symptoms": [
+            "DC charging not starting",
+            "Charge session ends prematurely",
+            "Error codes on charger display"
+        ],
+        "trigger_conditions": {
+            "dc_charge_comm_error": true
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Try different DC charger, check charge port condition",
+        "rca_category": "Charging System",
+        "occurrence_rate": 0.022
+    },
+    {
+        "fault_id": "EV-F015",
+        "component": "hvac",
+        "error_code": "B1234",
+        "fault_name": "Heat Pump Compressor Fault",
+        "description": "EV heat pump not operating efficiently, affecting cabin heating/cooling and range",
+        "symptoms": [
+            "Poor cabin heating in cold weather",
+            "High energy consumption for HVAC",
+            "Compressor noise"
+        ],
+        "trigger_conditions": {
+            "hvac_efficiency": {
+                "max": 0.5
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "Cold Climate EVs"
+        ],
+        "recommended_action": "Service heat pump system, check refrigerant levels",
+        "rca_category": "Climate Control",
+        "occurrence_rate": 0.018
+    },
+    {
+        "fault_id": "EV-F016",
+        "component": "steering",
+        "error_code": "C1000",
+        "fault_name": "Electric Power Steering Motor Fault",
+        "description": "EPS motor not providing expected assist level",
+        "symptoms": [
+            "Heavy steering at low speeds",
+            "Steering assist warning",
+            "Inconsistent steering feel"
+        ],
+        "trigger_conditions": {
+            "eps_motor_current_a": {
+                "min": 15
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Service EPS system, check motor and ECU",
+        "rca_category": "Steering System",
+        "occurrence_rate": 0.010
+    },
+    {
+        "fault_id": "EV-F017",
+        "component": "suspension",
+        "error_code": "C2100",
+        "fault_name": "Air Suspension Compressor Failure",
+        "description": "Air suspension system not maintaining set ride height",
+        "symptoms": [
+            "Vehicle sagging",
+            "Ride height inconsistent",
+            "Compressor running constantly",
+            "Air leak sounds"
+        ],
+        "trigger_conditions": {
+            "suspension_pressure_psi": {
+                "max": 30
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "Premium EVs with air suspension"
+        ],
+        "recommended_action": "Check for air leaks, service compressor",
+        "rca_category": "Suspension System",
+        "occurrence_rate": 0.012
+    },
+    {
+        "fault_id": "EV-F018",
+        "component": "tire",
+        "error_code": "C0750",
+        "fault_name": "TPMS Sensor Battery Low",
+        "description": "Tire pressure monitoring sensor battery nearing end of life",
+        "symptoms": [
+            "TPMS warning light",
+            "Intermittent pressure readings",
+            "Missing tire data"
+        ],
+        "trigger_conditions": {
+            "tpms_battery_low": true
+        },
+        "severity": "low",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace TPMS sensors during next tire service",
+        "rca_category": "Safety Sensors",
+        "occurrence_rate": 0.040
+    },
+    {
+        "fault_id": "EV-F019",
+        "component": "battery",
+        "error_code": "P0A86",
+        "fault_name": "Battery Pack Undertemperature",
+        "description": "Battery temperature below optimal operating range, affecting performance and charging",
+        "symptoms": [
+            "Reduced power in cold weather",
+            "Slow charging",
+            "Range reduction",
+            "Battery preheating active"
+        ],
+        "trigger_conditions": {
+            "battery_temp_c": {
+                "max": 5
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Precondition battery before driving, use scheduled departure",
+        "rca_category": "Thermal Management",
+        "occurrence_rate": 0.035
+    },
+    {
+        "fault_id": "EV-F020",
+        "component": "motor",
+        "error_code": "P0A0E",
+        "fault_name": "Motor Stator Winding Short",
+        "description": "Short circuit detected in motor stator windings",
+        "symptoms": [
+            "Motor overheating",
+            "Reduced power",
+            "Abnormal motor noise",
+            "Motor fault warning"
+        ],
+        "trigger_conditions": {
+            "motor_winding_resistance_ohm": {
+                "max": 0.05
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Motor replacement required, do not drive",
+        "rca_category": "Motor Electrical",
+        "occurrence_rate": 0.004
+    },
+    {
+        "fault_id": "EV-F021",
+        "component": "battery",
+        "error_code": "P0A87",
+        "fault_name": "Battery Contactor Welded",
+        "description": "Main battery contactor stuck closed, unable to disconnect HV system",
+        "symptoms": [
+            "Vehicle won't fully power off",
+            "HV system stays active",
+            "Potential safety hazard"
+        ],
+        "trigger_conditions": {
+            "contactor_welded": true
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Emergency service required, handle with extreme caution",
+        "rca_category": "High Voltage Safety",
+        "occurrence_rate": 0.002
+    },
+    {
+        "fault_id": "EV-F022",
+        "component": "battery",
+        "error_code": "P0A88",
+        "fault_name": "BMS Communication Fault",
+        "description": "Battery Management System not communicating with vehicle controller",
+        "symptoms": [
+            "Battery data unavailable",
+            "Vehicle may not start",
+            "Multiple warnings on dashboard"
+        ],
+        "trigger_conditions": {
+            "bms_comm_error": true
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Check 12V battery, service HV battery system",
+        "rca_category": "Battery Management",
+        "occurrence_rate": 0.008
+    },
+    {
+        "fault_id": "EV-F023",
+        "component": "12v_system",
+        "error_code": "U1000",
+        "fault_name": "12V Auxiliary Battery Low",
+        "description": "12V battery voltage below threshold, affecting vehicle systems startup",
+        "symptoms": [
+            "Slow vehicle wake-up",
+            "Infotainment issues",
+            "Door locks slow",
+            "Vehicle won't power on"
+        ],
+        "trigger_conditions": {
+            "aux_battery_voltage_v": {
+                "max": 11.5
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Charge or replace 12V battery",
+        "rca_category": "Low Voltage System",
+        "occurrence_rate": 0.030
+    },
+    {
+        "fault_id": "EV-F024",
+        "component": "charging",
+        "error_code": "P0A89",
+        "fault_name": "Charge Port Latch Stuck",
+        "description": "Charging cable latch mechanism not releasing or engaging properly",
+        "symptoms": [
+            "Cannot remove charging cable",
+            "Cannot insert charging cable",
+            "Charge port door issues"
+        ],
+        "trigger_conditions": {
+            "charge_port_latch_stuck": true
+        },
+        "severity": "low",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Manual release, service latch mechanism",
+        "rca_category": "Charging System",
+        "occurrence_rate": 0.015
+    },
+    {
+        "fault_id": "EV-F025",
+        "component": "motor",
+        "error_code": "P0A1B",
+        "fault_name": "Motor Speed Sensor Fault",
+        "description": "Motor speed sensor signal inconsistent or lost",
+        "symptoms": [
+            "Speedometer erratic",
+            "Traction control issues",
+            "ABS false activations"
+        ],
+        "trigger_conditions": {
+            "motor_speed_sensor_fault": true
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Service motor speed sensor",
+        "rca_category": "Motor Control",
+        "occurrence_rate": 0.009
+    },
+    {
+        "fault_id": "EV-F026",
+        "component": "drivetrain",
+        "error_code": "P0A20",
+        "fault_name": "Reduction Gear Wear Detected",
+        "description": "Excessive wear in single-speed reduction gear, detected via vibration analysis",
+        "symptoms": [
+            "Whining noise from drivetrain",
+            "Vibration at certain speeds",
+            "Efficiency drop"
+        ],
+        "trigger_conditions": {
+            "gear_vibration_hz": {
+                "min": 50
+            },
+            "wear_index": {
+                "min": 0.8
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "High-mileage EVs"
+        ],
+        "recommended_action": "Inspect reduction gear, plan for replacement",
+        "rca_category": "Drivetrain",
+        "occurrence_rate": 0.006
+    },
+    {
+        "fault_id": "EV-F027",
+        "component": "battery",
+        "error_code": "P0A8A",
+        "fault_name": "Battery Vent Obstruction",
+        "description": "Battery pack venting path obstructed, potential thermal runaway risk",
+        "symptoms": [
+            "Unusual battery area sounds",
+            "Pressure warnings",
+            "Distinct odor near battery"
+        ],
+        "trigger_conditions": {
+            "battery_pressure_abnormal": true
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Evacuate vehicle, contact emergency services",
+        "rca_category": "Battery Safety",
+        "occurrence_rate": 0.001
+    },
+    {
+        "fault_id": "EV-F028",
+        "component": "sensors",
+        "error_code": "U0100",
+        "fault_name": "CAN Bus Communication Error",
+        "description": "Controller Area Network communication lost between modules",
+        "symptoms": [
+            "Multiple warning lights",
+            "Features not working",
+            "Instrument cluster errors"
+        ],
+        "trigger_conditions": {
+            "can_bus_error": true
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Check wiring and connections, diagnose with scan tool",
+        "rca_category": "Communication Systems",
+        "occurrence_rate": 0.011
+    },
+    {
+        "fault_id": "EV-F029",
+        "component": "brakes",
+        "error_code": "C1A20",
+        "fault_name": "Brake Pad Wear Critical",
+        "description": "Brake pads worn below minimum thickness",
+        "symptoms": [
+            "Brake wear indicator light",
+            "Squealing noise when braking",
+            "Longer stopping distances"
+        ],
+        "trigger_conditions": {
+            "brake_pad_thickness_mm": {
+                "max": 3
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace brake pads immediately",
+        "rca_category": "Brake System",
+        "occurrence_rate": 0.020
+    },
+    {
+        "fault_id": "EV-F030",
+        "component": "motor",
+        "error_code": "P0A0F",
+        "fault_name": "Motor Bearing Wear",
+        "description": "Motor bearing showing signs of wear via increased friction and noise",
+        "symptoms": [
+            "Humming or grinding noise from motor",
+            "Slight vibration",
+            "Motor efficiency drop"
+        ],
+        "trigger_conditions": {
+            "motor_bearing_noise_db": {
+                "min": 65
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "High-mileage EVs"
+        ],
+        "recommended_action": "Schedule motor bearing service",
+        "rca_category": "Motor Mechanical",
+        "occurrence_rate": 0.007
+    },
+    {
+        "fault_id": "EV-F031",
+        "component": "thermal",
+        "error_code": "P0A30",
+        "fault_name": "Thermal Runaway Pre-Warning",
+        "description": "Early indicators of potential thermal runaway detected in battery cells",
+        "symptoms": [
+            "Rapid cell temperature rise",
+            "Unusual odor",
+            "Smoke possible",
+            "Emergency warnings"
+        ],
+        "trigger_conditions": {
+            "cell_temp_rise_rate_c_per_min": {
+                "min": 5
+            }
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "EMERGENCY: Stop and evacuate immediately, call 911",
+        "rca_category": "Battery Safety",
+        "occurrence_rate": 0.0005
+    },
+    {
+        "fault_id": "EV-F032",
+        "component": "software",
+        "error_code": "U0200",
+        "fault_name": "Vehicle Control Unit Firmware Corruption",
+        "description": "VCU firmware checksum mismatch detected",
+        "symptoms": [
+            "Unexpected resets",
+            "Feature malfunctions",
+            "Inconsistent behavior"
+        ],
+        "trigger_conditions": {
+            "vcu_checksum_error": true
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Reflash VCU firmware at service center",
+        "rca_category": "Software",
+        "occurrence_rate": 0.003
+    },
+    {
+        "fault_id": "EV-F033",
+        "component": "battery",
+        "error_code": "P0A8B",
+        "fault_name": "Fast Charging Degradation Warning",
+        "description": "Excessive DC fast charging detected, accelerating battery degradation",
+        "symptoms": [
+            "Reduced battery capacity over time",
+            "Slower charging acceptance",
+            "Range reduction"
+        ],
+        "trigger_conditions": {
+            "dc_fast_charge_ratio": {
+                "min": 0.8
+            }
+        },
+        "severity": "low",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Use AC charging more frequently",
+        "rca_category": "Battery Health",
+        "occurrence_rate": 0.015
+    },
+    {
+        "fault_id": "EV-F034",
+        "component": "cooling",
+        "error_code": "P0A3E",
+        "fault_name": "Coolant Temperature Sensor Fault",
+        "description": "Coolant temperature sensor reading implausible values",
+        "symptoms": [
+            "Erratic temperature readings",
+            "Cooling system running unnecessarily",
+            "Warnings"
+        ],
+        "trigger_conditions": {
+            "coolant_temp_sensor_fault": true
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace coolant temperature sensor",
+        "rca_category": "Cooling System",
+        "occurrence_rate": 0.010
+    },
+    {
+        "fault_id": "EV-F035",
+        "component": "inverter",
+        "error_code": "P0A0B",
+        "fault_name": "Inverter Gate Driver Fault",
+        "description": "Gate driver circuit malfunction affecting IGBT switching",
+        "symptoms": [
+            "Motor hesitation",
+            "Power fluctuations",
+            "Inverter fault codes"
+        ],
+        "trigger_conditions": {
+            "gate_driver_fault": true
+        },
+        "severity": "critical",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Inverter service required",
+        "rca_category": "Power Electronics",
+        "occurrence_rate": 0.004
+    },
+    {
+        "fault_id": "EV-F036",
+        "component": "battery",
+        "error_code": "P0A8C",
+        "fault_name": "Cell Capacity Fade Abnormal",
+        "description": "Battery cell capacity degradation faster than expected for age/mileage",
+        "symptoms": [
+            "Reduced range",
+            "Lower available energy",
+            "Battery health warning"
+        ],
+        "trigger_conditions": {
+            "capacity_fade_pct_per_year": {
+                "min": 5
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Battery health assessment, potential warranty claim",
+        "rca_category": "Battery Health",
+        "occurrence_rate": 0.012
+    },
+    {
+        "fault_id": "EV-F037",
+        "component": "motor",
+        "error_code": "P0A1C",
+        "fault_name": "Motor Phase Current Imbalance",
+        "description": "Three-phase motor currents not balanced, indicating winding or inverter issue",
+        "symptoms": [
+            "Motor vibration",
+            "Reduced efficiency",
+            "Noise"
+        ],
+        "trigger_conditions": {
+            "phase_current_imbalance_pct": {
+                "min": 10
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Motor and inverter diagnostics required",
+        "rca_category": "Motor Electrical",
+        "occurrence_rate": 0.006
+    },
+    {
+        "fault_id": "EV-F038",
+        "component": "hvac",
+        "error_code": "B1235",
+        "fault_name": "Cabin Air Filter Clogged",
+        "description": "HVAC airflow restricted due to clogged cabin air filter",
+        "symptoms": [
+            "Weak air flow",
+            "Musty odor",
+            "HVAC working harder",
+            "Poor defrosting"
+        ],
+        "trigger_conditions": {
+            "hvac_airflow_reduction_pct": {
+                "min": 30
+            }
+        },
+        "severity": "low",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace cabin air filter",
+        "rca_category": "Climate Control",
+        "occurrence_rate": 0.045
+    },
+    {
+        "fault_id": "EV-F039",
+        "component": "lighting",
+        "error_code": "B2000",
+        "fault_name": "Headlight LED Module Failure",
+        "description": "LED headlight module temperature or current fault",
+        "symptoms": [
+            "Headlight out or dim",
+            "Warning light",
+            "Flickering"
+        ],
+        "trigger_conditions": {
+            "headlight_led_fault": true
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace LED headlight module",
+        "rca_category": "Lighting System",
+        "occurrence_rate": 0.008
+    },
+    {
+        "fault_id": "EV-F040",
+        "component": "battery",
+        "error_code": "P0A8D",
+        "fault_name": "Precharge Circuit Fault",
+        "description": "HV battery precharge circuit not functioning correctly",
+        "symptoms": [
+            "Vehicle won't ready",
+            "Delayed startup",
+            "HV system errors"
+        ],
+        "trigger_conditions": {
+            "precharge_fault": true
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Service HV system, check precharge resistor",
+        "rca_category": "High Voltage Safety",
+        "occurrence_rate": 0.005
+    },
+    {
+        "fault_id": "EV-F041",
+        "component": "pedal",
+        "error_code": "P2122",
+        "fault_name": "Accelerator Pedal Position Sensor Fault",
+        "description": "APP sensor signal out of range or inconsistent",
+        "symptoms": [
+            "Limp mode",
+            "Reduced acceleration",
+            "Throttle response issues"
+        ],
+        "trigger_conditions": {
+            "app_sensor_fault": true
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Replace accelerator pedal assembly",
+        "rca_category": "Driver Controls",
+        "occurrence_rate": 0.007
+    },
+    {
+        "fault_id": "EV-F042",
+        "component": "cooling",
+        "error_code": "P0A3D",
+        "fault_name": "Thermal Paste Degradation",
+        "description": "Thermal interface material between cells/modules degraded",
+        "symptoms": [
+            "Hot spots in battery",
+            "Uneven temperature distribution",
+            "Accelerated aging"
+        ],
+        "trigger_conditions": {
+            "cell_temp_variance_c": {
+                "min": 8
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "Older EVs"
+        ],
+        "recommended_action": "Battery service, thermal paste replacement",
+        "rca_category": "Thermal Management",
+        "occurrence_rate": 0.004
+    },
+    {
+        "fault_id": "EV-F043",
+        "component": "safety",
+        "error_code": "B1300",
+        "fault_name": "Seatbelt Pretensioner Circuit Fault",
+        "description": "Seatbelt pretensioner pyrotechnic circuit resistance out of spec",
+        "symptoms": [
+            "Airbag/SRS warning light",
+            "Seatbelt warning"
+        ],
+        "trigger_conditions": {
+            "pretensioner_circuit_fault": true
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Service SRS system",
+        "rca_category": "Safety Systems",
+        "occurrence_rate": 0.006
+    },
+    {
+        "fault_id": "EV-F044",
+        "component": "motor",
+        "error_code": "P0A1D",
+        "fault_name": "Motor Efficiency Below Threshold",
+        "description": "Motor operating below expected efficiency, indicating internal losses",
+        "symptoms": [
+            "Reduced range",
+            "Motor running warm",
+            "Higher energy consumption"
+        ],
+        "trigger_conditions": {
+            "motor_efficiency": {
+                "max": 0.85
+            }
+        },
+        "severity": "medium",
+        "affected_models": [
+            "High-mileage EVs"
+        ],
+        "recommended_action": "Motor inspection recommended",
+        "rca_category": "Motor Performance",
+        "occurrence_rate": 0.010
+    },
+    {
+        "fault_id": "EV-F045",
+        "component": "battery",
+        "error_code": "P0A8E",
+        "fault_name": "Battery Module Connection Resistance High",
+        "description": "Increased resistance at battery module interconnections",
+        "symptoms": [
+            "Power limitations",
+            "Heat at battery connections",
+            "Voltage drops under load"
+        ],
+        "trigger_conditions": {
+            "module_connection_resistance_mohm": {
+                "min": 5
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Battery service, connection inspection",
+        "rca_category": "Battery Electrical",
+        "occurrence_rate": 0.008
+    },
+    {
+        "fault_id": "EV-F046",
+        "component": "charging",
+        "error_code": "P0A8F",
+        "fault_name": "V2G/V2L Inverter Fault",
+        "description": "Vehicle-to-grid or vehicle-to-load inverter malfunction",
+        "symptoms": [
+            "Bidirectional charging not working",
+            "V2L outlet inactive",
+            "Fault indicators"
+        ],
+        "trigger_conditions": {
+            "v2g_inverter_fault": true
+        },
+        "severity": "low",
+        "affected_models": [
+            "V2G-capable EVs"
+        ],
+        "recommended_action": "Service V2G system",
+        "rca_category": "Bidirectional Charging",
+        "occurrence_rate": 0.005
+    },
+    {
+        "fault_id": "EV-F047",
+        "component": "adas",
+        "error_code": "C1500",
+        "fault_name": "Forward Collision Sensor Obscured",
+        "description": "Radar or camera sensor for ADAS features obscured or degraded",
+        "symptoms": [
+            "ADAS warnings",
+            "Features disabled",
+            "Sensor cleaning message"
+        ],
+        "trigger_conditions": {
+            "adas_sensor_blocked": true
+        },
+        "severity": "medium",
+        "affected_models": [
+            "All EVs with ADAS"
+        ],
+        "recommended_action": "Clean sensors, check for damage",
+        "rca_category": "Safety Sensors",
+        "occurrence_rate": 0.025
+    },
+    {
+        "fault_id": "EV-F048",
+        "component": "drivetrain",
+        "error_code": "P0A21",
+        "fault_name": "Differential Oil Temperature High",
+        "description": "Differential gear oil temperature exceeding safe limit",
+        "symptoms": [
+            "Whining noise",
+            "AWD performance reduced",
+            "Drivetrain warning"
+        ],
+        "trigger_conditions": {
+            "diff_oil_temp_c": {
+                "min": 120
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "Dual-motor/AWD EVs"
+        ],
+        "recommended_action": "Check differential oil level and condition",
+        "rca_category": "Drivetrain",
+        "occurrence_rate": 0.006
+    },
+    {
+        "fault_id": "EV-F049",
+        "component": "software",
+        "error_code": "U0201",
+        "fault_name": "OTA Update Failed",
+        "description": "Over-the-air software update did not complete successfully",
+        "symptoms": [
+            "Update stuck",
+            "Features not working as expected",
+            "Version mismatch"
+        ],
+        "trigger_conditions": {
+            "ota_update_failed": true
+        },
+        "severity": "low",
+        "affected_models": [
+            "Connected EVs"
+        ],
+        "recommended_action": "Retry update, contact support if persistent",
+        "rca_category": "Software",
+        "occurrence_rate": 0.020
+    },
+    {
+        "fault_id": "EV-F050",
+        "component": "battery",
+        "error_code": "P0A90",
+        "fault_name": "Battery State of Health Critical",
+        "description": "Battery SOH fallen below 70% threshold, significant capacity loss",
+        "symptoms": [
+            "Dramatically reduced range",
+            "Power limitations",
+            "Battery replacement recommended"
+        ],
+        "trigger_conditions": {
+            "battery_soh_pct": {
+                "max": 70
+            }
+        },
+        "severity": "high",
+        "affected_models": [
+            "All EV Models"
+        ],
+        "recommended_action": "Battery replacement recommended",
+        "rca_category": "Battery Health",
+        "occurrence_rate": 0.008
+    }
+]

@@ -1,0 +1,566 @@
+[
+    {
+        "capa_id": "CAPA-2024-001",
+        "created_date": "2024-01-15",
+        "status": "closed",
+        "failure_mode": "Battery cooling pump failure leading to thermal runaway near-miss",
+        "root_cause": {
+            "primary": "Coolant pump bearing wear due to manufacturing contamination",
+            "contributing_factors": [
+                "Insufficient incoming inspection of pump components",
+                "No vibration monitoring in early pump wear detection"
+            ],
+            "root_cause_category": "Manufacturing Defect"
+        },
+        "affected_components": [
+            "cooling_pump",
+            "battery"
+        ],
+        "affected_models": [
+            "SentinEV-X1 2023 Q1-Q2 production"
+        ],
+        "detection_method": "Field failure analysis",
+        "occurrence": {
+            "production_volume": 5000,
+            "failures": 23,
+            "rate_ppm": 4600
+        },
+        "corrective_actions": [
+            {
+                "action": "Implement pump bearing cleanliness specification",
+                "responsible": "Supplier Quality",
+                "due_date": "2024-02-15",
+                "status": "completed"
+            },
+            {
+                "action": "Add vibration signature monitoring to predictive maintenance",
+                "responsible": "Vehicle Software",
+                "due_date": "2024-03-01",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Enhanced incoming inspection for coolant pump assemblies",
+                "responsible": "Quality Assurance",
+                "status": "implemented"
+            },
+            {
+                "action": "Supplier process audit for bearing cleanliness",
+                "responsible": "Supplier Quality",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "Accelerated life testing and field monitoring",
+            "result": "No recurrence in 6 months of production",
+            "closure_date": "2024-07-15"
+        },
+        "lessons_learned": "Early detection of pump bearing wear through motor current signature analysis can prevent thermal events",
+        "design_feedback": "Add redundant temperature sensors near battery modules closest to coolant inlet"
+    },
+    {
+        "capa_id": "CAPA-2024-002",
+        "created_date": "2024-02-20",
+        "status": "closed",
+        "failure_mode": "Cell voltage imbalance causing premature capacity fade",
+        "root_cause": {
+            "primary": "BMS cell balancing algorithm not optimized for cold climate charging",
+            "contributing_factors": [
+                "Insufficient testing in sub-zero temperature conditions",
+                "Balancing timeout too short during cold charge sessions"
+            ],
+            "root_cause_category": "Software/Algorithm"
+        },
+        "affected_components": [
+            "battery",
+            "bms"
+        ],
+        "affected_models": [
+            "SentinEV-X1 with software v1.0-v1.2"
+        ],
+        "detection_method": "Customer complaints and warranty claims",
+        "occurrence": {
+            "software_installations": 15000,
+            "complaints": 127,
+            "rate_ppm": 8467
+        },
+        "corrective_actions": [
+            {
+                "action": "Update BMS balancing algorithm for cold temperature operation",
+                "responsible": "Embedded Software",
+                "due_date": "2024-03-15",
+                "status": "completed"
+            },
+            {
+                "action": "OTA update deployment to affected vehicles",
+                "responsible": "Vehicle Software",
+                "due_date": "2024-04-01",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Expand cold climate test protocol for BMS software",
+                "responsible": "Validation",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "Field data monitoring of cell balance in cold regions",
+            "result": "98% reduction in imbalance complaints",
+            "closure_date": "2024-08-20"
+        },
+        "lessons_learned": "Temperature-dependent algorithms require testing across full operating envelope",
+        "design_feedback": "Implement adaptive balancing timeout based on cell temperature"
+    },
+    {
+        "capa_id": "CAPA-2024-003",
+        "created_date": "2024-03-10",
+        "status": "closed",
+        "failure_mode": "Motor resolver drift causing hesitation during acceleration",
+        "root_cause": {
+            "primary": "Resolver mounting adhesive degradation at high temperatures",
+            "contributing_factors": [
+                "Adhesive cure time specification not adequate for high-volume production",
+                "High motor temperature events accelerating adhesive aging"
+            ],
+            "root_cause_category": "Material Specification"
+        },
+        "affected_components": [
+            "motor",
+            "resolver"
+        ],
+        "affected_models": [
+            "SentinEV-X1 2023 all production"
+        ],
+        "detection_method": "Diagnostic trouble code analysis",
+        "occurrence": {
+            "production_volume": 25000,
+            "failures": 89,
+            "rate_ppm": 3560
+        },
+        "corrective_actions": [
+            {
+                "action": "Change to high-temperature grade epoxy adhesive",
+                "responsible": "Motor Engineering",
+                "due_date": "2024-04-15",
+                "status": "completed"
+            },
+            {
+                "action": "Add resolver drift monitoring to predictive model",
+                "responsible": "Data Science",
+                "due_date": "2024-05-01",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Material specification update for all motor mount adhesives",
+                "responsible": "Materials Engineering",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "Accelerated thermal cycling test and field monitoring",
+            "result": "Zero failures with new adhesive in 50000 units",
+            "closure_date": "2024-09-10"
+        },
+        "lessons_learned": "Motor adhesive materials must be validated at worst-case thermal conditions including aggressive driving profiles",
+        "design_feedback": "Consider mechanical resolver retention as primary, adhesive as secondary"
+    },
+    {
+        "capa_id": "CAPA-2024-004",
+        "created_date": "2024-04-05",
+        "status": "closed",
+        "failure_mode": "Brake drag causing premature pad wear and overheating",
+        "root_cause": {
+            "primary": "Caliper piston seal swell due to incompatible brake fluid additive",
+            "contributing_factors": [
+                "New brake fluid supplier with different additive package",
+                "Insufficient compatibility testing with seal material"
+            ],
+            "root_cause_category": "Supplier Change"
+        },
+        "affected_components": [
+            "brakes",
+            "caliper"
+        ],
+        "affected_models": [
+            "SentinEV-X1 2024 January production"
+        ],
+        "detection_method": "Higher than expected brake pad warranty claims",
+        "occurrence": {
+            "production_volume": 2000,
+            "failures": 35,
+            "rate_ppm": 17500
+        },
+        "corrective_actions": [
+            {
+                "action": "Revert to previous brake fluid specification",
+                "responsible": "Brake Engineering",
+                "due_date": "2024-04-15",
+                "status": "completed"
+            },
+            {
+                "action": "Affected vehicles recalled for brake system inspection",
+                "responsible": "Quality",
+                "due_date": "2024-05-01",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "All fluid changes require seal compatibility validation",
+                "responsible": "Supplier Quality",
+                "status": "implemented"
+            },
+            {
+                "action": "Add brake temperature monitoring to anomaly detection",
+                "responsible": "Data Science",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "100% inspection of affected vehicles, field monitoring",
+            "result": "All affected units serviced, no further occurrences",
+            "closure_date": "2024-07-05"
+        },
+        "lessons_learned": "Supplier changes for lubricants and fluids require full compatibility validation",
+        "design_feedback": "Add brake drag detection via motor current signature analysis during coasting"
+    },
+    {
+        "capa_id": "CAPA-2024-005",
+        "created_date": "2024-05-12",
+        "status": "open",
+        "failure_mode": "Inverter IGBT failure under repeated high-power acceleration",
+        "root_cause": {
+            "primary": "Thermal cycling fatigue of IGBT solder layer",
+            "contributing_factors": [
+                "Higher than expected number of launch control activations",
+                "Solder joint design margin insufficient for aggressive drivers"
+            ],
+            "root_cause_category": "Design Margin"
+        },
+        "affected_components": [
+            "inverter"
+        ],
+        "affected_models": [
+            "SentinEV-X1 Performance variant"
+        ],
+        "detection_method": "Field failure analysis",
+        "occurrence": {
+            "production_volume": 8000,
+            "failures": 12,
+            "rate_ppm": 1500
+        },
+        "corrective_actions": [
+            {
+                "action": "Redesign IGBT module with enhanced thermal cycling capability",
+                "responsible": "Power Electronics",
+                "due_date": "2024-09-01",
+                "status": "in_progress"
+            },
+            {
+                "action": "Add thermal cycling counter to predictive maintenance",
+                "responsible": "Data Science",
+                "due_date": "2024-06-15",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Usage-based warranty tracking for high-stress components",
+                "responsible": "Warranty",
+                "status": "planned"
+            }
+        ],
+        "verification": {
+            "method": "Accelerated thermal cycling validation of new design",
+            "result": "Testing in progress",
+            "closure_date": null
+        },
+        "lessons_learned": "Customer usage patterns for performance vehicles exceed development cycle test profiles",
+        "design_feedback": "Increase IGBT thermal cycling margin by 50% for performance variants"
+    },
+    {
+        "capa_id": "CAPA-2024-006",
+        "created_date": "2024-06-01",
+        "status": "closed",
+        "failure_mode": "12V battery drain causing vehicle no-start condition",
+        "root_cause": {
+            "primary": "Software bug causing phantom wake events during deep sleep",
+            "contributing_factors": [
+                "Edge case in cellular modem sleep state machine",
+                "Insufficient integration testing of sleep/wake transitions"
+            ],
+            "root_cause_category": "Software/Firmware"
+        },
+        "affected_components": [
+            "12v_system",
+            "software"
+        ],
+        "affected_models": [
+            "SentinEV-X1 with telematics v2.1"
+        ],
+        "detection_method": "Roadside assistance call pattern analysis",
+        "occurrence": {
+            "software_installations": 20000,
+            "incidents": 156,
+            "rate_ppm": 7800
+        },
+        "corrective_actions": [
+            {
+                "action": "Fix cellular modem sleep state machine bug",
+                "responsible": "Connectivity Team",
+                "due_date": "2024-06-20",
+                "status": "completed"
+            },
+            {
+                "action": "Deploy OTA fix with rollback capability",
+                "responsible": "Vehicle Software",
+                "due_date": "2024-07-01",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Enhanced sleep/wake testing protocol",
+                "responsible": "Validation",
+                "status": "implemented"
+            },
+            {
+                "action": "12V battery monitoring telemetry enhancement",
+                "responsible": "Data Science",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "Field telemetry monitoring for phantom wake events",
+            "result": "99% reduction in phantom wakes after OTA",
+            "closure_date": "2024-09-01"
+        },
+        "lessons_learned": "Vehicle sleep state testing must include all connected modules and edge case transitions",
+        "design_feedback": "Implement 12V battery health prediction based on charge/discharge patterns"
+    },
+    {
+        "capa_id": "CAPA-2024-007",
+        "created_date": "2024-06-15",
+        "status": "closed",
+        "failure_mode": "Regenerative braking inconsistency causing unexpected deceleration variation",
+        "root_cause": {
+            "primary": "Brake blending algorithm oscillation at specific speed/SOC combinations",
+            "contributing_factors": [
+                "PID tuning not optimized for all operating conditions",
+                "Sensor noise causing control instability"
+            ],
+            "root_cause_category": "Control Algorithm"
+        },
+        "affected_components": [
+            "brakes",
+            "motor",
+            "software"
+        ],
+        "affected_models": [
+            "SentinEV-X1 with brake software v3.0-v3.2"
+        ],
+        "detection_method": "Customer feedback and social media monitoring",
+        "occurrence": {
+            "software_installations": 18000,
+            "complaints": 245,
+            "rate_ppm": 13611
+        },
+        "corrective_actions": [
+            {
+                "action": "Retune brake blending PID parameters",
+                "responsible": "Brake Control Team",
+                "due_date": "2024-07-01",
+                "status": "completed"
+            },
+            {
+                "action": "Add sensor noise filtering to brake pressure input",
+                "responsible": "Brake Control Team",
+                "due_date": "2024-07-01",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Brake blending test cases for edge operating conditions",
+                "responsible": "Validation",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "Customer satisfaction survey and field data analysis",
+            "result": "Complaints reduced by 95%",
+            "closure_date": "2024-09-15"
+        },
+        "lessons_learned": "Subjective driving feel issues require extensive diverse driver testing",
+        "design_feedback": "Implement adaptive brake blending based on driver preference learning"
+    },
+    {
+        "capa_id": "CAPA-2024-008",
+        "created_date": "2024-07-01",
+        "status": "open",
+        "failure_mode": "Heat pump refrigerant leak in cold climate conditions",
+        "root_cause": {
+            "primary": "Thermal contraction of refrigerant line fitting beyond design tolerance",
+            "contributing_factors": [
+                "Fitting torque specification at lower limit",
+                "Extreme cold temperature (-30°C) exposure"
+            ],
+            "root_cause_category": "Design Margin"
+        },
+        "affected_components": [
+            "hvac"
+        ],
+        "affected_models": [
+            "SentinEV-X1 all variants"
+        ],
+        "detection_method": "Service network feedback from cold regions",
+        "occurrence": {
+            "cold_region_units": 5000,
+            "failures": 28,
+            "rate_ppm": 5600
+        },
+        "corrective_actions": [
+            {
+                "action": "Increase fitting torque specification",
+                "responsible": "HVAC Engineering",
+                "due_date": "2024-08-01",
+                "status": "completed"
+            },
+            {
+                "action": "Add refrigerant pressure monitoring to diagnostics",
+                "responsible": "Climate Control Team",
+                "due_date": "2024-09-01",
+                "status": "in_progress"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Cold climate validation testing enhancement",
+                "responsible": "Validation",
+                "status": "in_progress"
+            }
+        ],
+        "verification": {
+            "method": "Cold climate field trial with new torque spec",
+            "result": "Testing ongoing through winter season",
+            "closure_date": null
+        },
+        "lessons_learned": "Refrigerant system must be validated at extreme temperature cycling conditions",
+        "design_feedback": "Consider spring-loaded fitting design for thermal expansion tolerance"
+    },
+    {
+        "capa_id": "CAPA-2024-009",
+        "created_date": "2024-07-20",
+        "status": "closed",
+        "failure_mode": "SOC estimation error after fast charging sessions",
+        "root_cause": {
+            "primary": "Coulomb counting drift accumulation not corrected during DC fast charge",
+            "contributing_factors": [
+                "OCV-based correction disabled during fast charging",
+                "Extended fast charging sessions compounding drift"
+            ],
+            "root_cause_category": "Algorithm"
+        },
+        "affected_components": [
+            "battery",
+            "bms"
+        ],
+        "affected_models": [
+            "SentinEV-X1 with BMS v4.0"
+        ],
+        "detection_method": "Range prediction accuracy telemetry analysis",
+        "occurrence": {
+            "software_installations": 22000,
+            "affected": 3520,
+            "rate_ppm": 160000
+        },
+        "corrective_actions": [
+            {
+                "action": "Implement in-charge SOC recalibration algorithm",
+                "responsible": "BMS Engineering",
+                "due_date": "2024-08-15",
+                "status": "completed"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Add SOC deviation monitoring to predictive analytics",
+                "responsible": "Data Science",
+                "status": "implemented"
+            }
+        ],
+        "verification": {
+            "method": "Fleet-wide SOC accuracy monitoring",
+            "result": "SOC accuracy within ±3% specification",
+            "closure_date": "2024-10-20"
+        },
+        "lessons_learned": "Battery estimation algorithms must maintain accuracy across all charging use cases",
+        "design_feedback": "Implement adaptive calibration triggers based on usage patterns"
+    },
+    {
+        "capa_id": "CAPA-2024-010",
+        "created_date": "2024-08-01",
+        "status": "open",
+        "failure_mode": "Tire wear pattern indicating alignment issues from factory",
+        "root_cause": {
+            "primary": "Production line alignment equipment calibration drift",
+            "contributing_factors": [
+                "Calibration interval too long for high-volume production",
+                "No statistical process control on alignment measurements"
+            ],
+            "root_cause_category": "Production Process"
+        },
+        "affected_components": [
+            "suspension",
+            "steering",
+            "tires"
+        ],
+        "affected_models": [
+            "SentinEV-X1 August 2024 production batch"
+        ],
+        "detection_method": "Warranty claims for premature tire replacement",
+        "occurrence": {
+            "production_volume": 3000,
+            "complaints": 45,
+            "rate_ppm": 15000
+        },
+        "corrective_actions": [
+            {
+                "action": "Recalibrate alignment equipment",
+                "responsible": "Production",
+                "due_date": "2024-08-10",
+                "status": "completed"
+            },
+            {
+                "action": "Offer free alignment check to affected customers",
+                "responsible": "Customer Service",
+                "due_date": "2024-09-01",
+                "status": "in_progress"
+            }
+        ],
+        "preventive_actions": [
+            {
+                "action": "Implement daily calibration verification",
+                "responsible": "Production",
+                "status": "implemented"
+            },
+            {
+                "action": "SPC monitoring for alignment parameters",
+                "responsible": "Quality",
+                "status": "in_progress"
+            }
+        ],
+        "verification": {
+            "method": "Alignment audit of recent production",
+            "result": "100% within specification since recalibration",
+            "closure_date": null
+        },
+        "lessons_learned": "High-volume production requires tighter process monitoring",
+        "design_feedback": "Consider adding vehicle-based alignment monitoring via steering angle sensor"
+    }
+]

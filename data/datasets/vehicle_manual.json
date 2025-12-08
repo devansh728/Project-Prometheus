@@ -1,0 +1,354 @@
+{
+    "vehicle_model": "SentinEV-X1",
+    "model_year": 2024,
+    "manufacturer": "Sentinel Motors",
+    "components": {
+        "battery": {
+            "type": "Lithium-Ion NMC 811",
+            "capacity_kwh": 75.0,
+            "nominal_voltage_v": 400,
+            "max_voltage_v": 420,
+            "min_voltage_v": 320,
+            "cell_count": 96,
+            "module_count": 8,
+            "temperature_specs": {
+                "optimal_min_c": 20,
+                "optimal_max_c": 40,
+                "warning_c": 50,
+                "critical_max_c": 60,
+                "critical_min_c": -10
+            },
+            "charging_specs": {
+                "max_ac_charging_kw": 11,
+                "max_dc_charging_kw": 150,
+                "optimal_soc_range_pct": [
+                    20,
+                    80
+                ],
+                "full_charge_time_hours": 8,
+                "dc_fast_charge_20_80_min": 30
+            },
+            "degradation": {
+                "expected_annual_capacity_loss_pct": 2.5,
+                "warranty_soh_threshold_pct": 70,
+                "warranty_years": 8,
+                "warranty_miles": 100000
+            },
+            "maintenance": [
+                {
+                    "interval_miles": 20000,
+                    "task": "Coolant level check and top-up"
+                },
+                {
+                    "interval_miles": 50000,
+                    "task": "Battery health diagnostic scan"
+                },
+                {
+                    "interval_miles": 100000,
+                    "task": "Full battery inspection and thermal paste check"
+                }
+            ],
+            "safety_limits": {
+                "max_continuous_discharge_c_rate": 2.0,
+                "max_peak_discharge_c_rate": 3.0,
+                "max_charge_c_rate": 1.5,
+                "internal_resistance_mohm": {
+                    "new": 40,
+                    "service_limit": 80
+                }
+            }
+        },
+        "motor": {
+            "type": "Permanent Magnet Synchronous Motor (PMSM)",
+            "max_power_kw": 200,
+            "max_torque_nm": 350,
+            "max_rpm": 12000,
+            "efficiency_peak_pct": 97,
+            "cooling_type": "Liquid cooled",
+            "temperature_specs": {
+                "optimal_max_c": 80,
+                "warning_c": 100,
+                "critical_c": 120
+            },
+            "maintenance": [
+                {
+                    "interval_miles": 100000,
+                    "task": "Motor bearing inspection"
+                },
+                {
+                    "interval_miles": 150000,
+                    "task": "Motor winding resistance check"
+                }
+            ],
+            "specifications": {
+                "weight_kg": 85,
+                "resolver_type": "12-bit absolute",
+                "phases": 3
+            }
+        },
+        "inverter": {
+            "type": "Silicon Carbide (SiC) MOSFET",
+            "max_power_kw": 200,
+            "switching_frequency_khz": 20,
+            "efficiency_pct": 98,
+            "temperature_specs": {
+                "optimal_max_c": 70,
+                "warning_c": 80,
+                "critical_c": 90
+            },
+            "cooling_type": "Shared battery cooling loop",
+            "maintenance": [
+                {
+                    "interval_miles": 50000,
+                    "task": "Inverter thermal compound inspection"
+                }
+            ]
+        },
+        "cooling_system": {
+            "type": "Dual-loop liquid cooling",
+            "coolant_type": "G48 Ethylene Glycol mix",
+            "coolant_capacity_liters": 12,
+            "battery_loop": {
+                "pump_type": "Electric variable speed",
+                "radiator_size": "Large front-mounted",
+                "chiller_capacity_kw": 5
+            },
+            "motor_inverter_loop": {
+                "pump_type": "Electric fixed speed",
+                "radiator_type": "Auxiliary side-mounted"
+            },
+            "temperature_specs": {
+                "thermostat_open_c": 40,
+                "max_system_temp_c": 60
+            },
+            "maintenance": [
+                {
+                    "interval_miles": 40000,
+                    "task": "Coolant level inspection"
+                },
+                {
+                    "interval_miles": 80000,
+                    "task": "Coolant flush and replacement"
+                },
+                {
+                    "interval_miles": 100000,
+                    "task": "Pump and hose inspection"
+                }
+            ]
+        },
+        "brakes": {
+            "front_type": "Ventilated disc with regenerative blend",
+            "rear_type": "Solid disc with regenerative blend",
+            "front_disc_diameter_mm": 355,
+            "rear_disc_diameter_mm": 330,
+            "pad_material": "Low-dust ceramic compound",
+            "regenerative_braking": {
+                "max_power_kw": 75,
+                "one_pedal_driving": true,
+                "adjustable_regen_levels": 4
+            },
+            "temperature_specs": {
+                "normal_operating_c": 150,
+                "warning_c": 350,
+                "fade_threshold_c": 450
+            },
+            "maintenance": [
+                {
+                    "interval_miles": 30000,
+                    "task": "Brake fluid level check"
+                },
+                {
+                    "interval_miles": 40000,
+                    "task": "Brake pad thickness inspection"
+                },
+                {
+                    "interval_miles": 60000,
+                    "task": "Brake fluid replacement"
+                },
+                {
+                    "interval_miles": 80000,
+                    "task": "Disc rotor thickness check"
+                }
+            ],
+            "safety_limits": {
+                "min_pad_thickness_mm": 3,
+                "min_disc_thickness_mm": 25
+            }
+        },
+        "suspension": {
+            "front_type": "Double wishbone with adaptive damping",
+            "rear_type": "Multi-link with adaptive damping",
+            "air_suspension_option": true,
+            "ride_height_adjustment_mm": 50,
+            "maintenance": [
+                {
+                    "interval_miles": 50000,
+                    "task": "Suspension component inspection"
+                },
+                {
+                    "interval_miles": 80000,
+                    "task": "Damper performance check"
+                }
+            ]
+        },
+        "steering": {
+            "type": "Electric Power Steering (EPS)",
+            "ratio": 14.5,
+            "turns_lock_to_lock": 2.8,
+            "maintenance": [
+                {
+                    "interval_miles": 100000,
+                    "task": "Steering rack inspection"
+                }
+            ]
+        },
+        "tires": {
+            "front_size": "255/45R19",
+            "rear_size": "285/40R19",
+            "recommended_pressure_front_psi": 42,
+            "recommended_pressure_rear_psi": 44,
+            "type": "EV-specific low rolling resistance",
+            "tpms": "Direct pressure monitoring",
+            "maintenance": [
+                {
+                    "interval_miles": 10000,
+                    "task": "Tire rotation"
+                },
+                {
+                    "interval_miles": 5000,
+                    "task": "Pressure check and adjustment"
+                },
+                {
+                    "interval_miles": 30000,
+                    "task": "Wheel alignment check"
+                }
+            ]
+        },
+        "hvac": {
+            "type": "Heat pump with PTC backup",
+            "heat_pump_cop": 3.5,
+            "ptc_heater_power_kw": 4,
+            "ac_refrigerant": "R1234yf",
+            "cabin_filter": "HEPA with activated carbon",
+            "seat_heating": true,
+            "seat_cooling": true,
+            "steering_wheel_heating": true,
+            "maintenance": [
+                {
+                    "interval_miles": 20000,
+                    "task": "Cabin filter replacement"
+                },
+                {
+                    "interval_miles": 60000,
+                    "task": "AC system inspection"
+                },
+                {
+                    "interval_miles": 100000,
+                    "task": "Heat pump refrigerant check"
+                }
+            ]
+        },
+        "12v_system": {
+            "battery_type": "AGM lead-acid",
+            "capacity_ah": 70,
+            "voltage": 12,
+            "dcdc_converter_power_w": 3000,
+            "maintenance": [
+                {
+                    "interval_miles": 50000,
+                    "task": "12V battery health check"
+                },
+                {
+                    "interval_years": 4,
+                    "task": "12V battery replacement"
+                }
+            ]
+        },
+        "charging_system": {
+            "ac_charger_type": "Onboard 3-phase",
+            "ac_max_power_kw": 11,
+            "dc_connector": "CCS Combo 2",
+            "dc_max_power_kw": 150,
+            "v2g_capable": true,
+            "v2l_power_kw": 3.6,
+            "charge_port_location": "Left rear fender",
+            "maintenance": [
+                {
+                    "interval_miles": 30000,
+                    "task": "Charge port inspection and cleaning"
+                }
+            ]
+        }
+    },
+    "vehicle_specs": {
+        "length_mm": 4750,
+        "width_mm": 1890,
+        "height_mm": 1450,
+        "wheelbase_mm": 2875,
+        "curb_weight_kg": 2100,
+        "gross_weight_kg": 2650,
+        "frontal_area_m2": 2.35,
+        "drag_coefficient": 0.24,
+        "rolling_resistance_coefficient": 0.008,
+        "trunk_capacity_liters": 420,
+        "frunk_capacity_liters": 85
+    },
+    "performance": {
+        "acceleration_0_100_kmh_s": 5.2,
+        "top_speed_kmh": 200,
+        "wltp_range_km": 480,
+        "energy_consumption_wh_km": 156,
+        "drive_type": "Rear wheel drive"
+    },
+    "driver_profiles": {
+        "aggressive": {
+            "description": "High acceleration usage, late braking, higher speeds",
+            "typical_energy_consumption_multiplier": 1.35,
+            "typical_wear_multiplier": 2.5,
+            "typical_regen_efficiency": 0.55,
+            "typical_battery_stress_factor": 1.4
+        },
+        "normal": {
+            "description": "Balanced driving style",
+            "typical_energy_consumption_multiplier": 1.0,
+            "typical_wear_multiplier": 1.0,
+            "typical_regen_efficiency": 0.75,
+            "typical_battery_stress_factor": 1.0
+        },
+        "eco": {
+            "description": "Smooth acceleration, anticipatory braking, moderate speeds",
+            "typical_energy_consumption_multiplier": 0.85,
+            "typical_wear_multiplier": 0.5,
+            "typical_regen_efficiency": 0.92,
+            "typical_battery_stress_factor": 0.7
+        }
+    },
+    "thresholds": {
+        "anomaly_detection": {
+            "battery_temp_warning_c": 50,
+            "battery_temp_critical_c": 60,
+            "motor_temp_warning_c": 100,
+            "inverter_temp_warning_c": 80,
+            "brake_temp_warning_c": 350,
+            "jerk_harsh_threshold_ms3": 4.0,
+            "jerk_emergency_threshold_ms3": 8.0,
+            "regen_efficiency_poor_threshold": 0.5,
+            "power_draw_anomaly_factor": 1.5,
+            "cell_imbalance_warning_v": 0.2,
+            "soc_deviation_warning_pct": 10
+        },
+        "scoring": {
+            "perfect_regen_threshold": 0.9,
+            "good_regen_threshold": 0.75,
+            "smooth_acceleration_threshold_ms2": 2.0,
+            "optimal_speed_range_kmh": [
+                50,
+                100
+            ],
+            "efficient_temp_range_c": [
+                20,
+                35
+            ]
+        }
+    }
+}

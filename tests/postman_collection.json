@@ -1,0 +1,707 @@
+{
+    "info": {
+        "_postman_id": "sentinev-api-collection",
+        "name": "SentinEV Multi-Agent API",
+        "description": "API collection for testing the SentinEV EV Predictive Maintenance System",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000",
+            "type": "string"
+        },
+        {
+            "key": "vehicle_id",
+            "value": "VIN_TEST_001",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Health & Info",
+            "item": [
+                {
+                    "name": "API Health Check",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                ""
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Vehicle Management",
+            "item": [
+                {
+                    "name": "Initialize Vehicle (Normal Driver)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"driver_profile\": \"normal\",\n  \"weather\": \"moderate\",\n  \"generate_days\": 60\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/init",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "init"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Initialize Vehicle (Aggressive Driver)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"driver_profile\": \"aggressive\",\n  \"weather\": \"hot\",\n  \"generate_days\": 30\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/VIN_AGGRESSIVE_001/init",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "VIN_AGGRESSIVE_001",
+                                "init"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Initialize Vehicle (Eco Driver)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"driver_profile\": \"eco\",\n  \"weather\": \"cold\",\n  \"generate_days\": 60\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/VIN_ECO_001/init",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "VIN_ECO_001",
+                                "init"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List All Vehicles",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Vehicle Stats",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/stats",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "stats"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Telemetry Streaming",
+            "item": [
+                {
+                    "name": "Stream Telemetry (SSE)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "text/event-stream"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/stream?interval_ms=2000",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "stream"
+                            ],
+                            "query": [
+                                {
+                                    "key": "interval_ms",
+                                    "value": "2000"
+                                }
+                            ]
+                        },
+                        "description": "Server-Sent Events stream. Use WebSocket endpoint for bidirectional communication."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Fault Injection",
+            "item": [
+                {
+                    "name": "Inject Battery Overheat",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fault\": \"overheat\",\n  \"severity\": 1.5\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/inject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "inject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Inject Cell Imbalance",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fault\": \"cell_imbalance\",\n  \"severity\": 1.0\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/inject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "inject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Inject Motor Resolver Fault",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fault\": \"motor_resolver\",\n  \"severity\": 1.2\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/inject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "inject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Inject Brake Drag",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fault\": \"brake_drag\",\n  \"severity\": 1.8\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/inject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "inject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Inject Coolant Low",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fault\": \"coolant_low\",\n  \"severity\": 1.0\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/inject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "inject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Inject Inverter Fault",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"fault\": \"inverter\",\n  \"severity\": 1.3\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/inject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "inject"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Clear All Faults",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/faults",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "faults"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Chatbot",
+            "item": [
+                {
+                    "name": "Chat - Vehicle Status",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"What's the current status of my vehicle?\",\n  \"session_id\": \"session-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/chat",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "chat"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Chat - Explain Warning",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"Why is my battery temperature high? Should I be worried?\",\n  \"session_id\": \"session-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/chat",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "chat"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Chat - Driving Tips",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"How can I improve my driving score and extend my battery life?\",\n  \"session_id\": \"session-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/chat",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "chat"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Chat - Schedule Service",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"message\": \"I'd like to schedule a service appointment for next week\",\n  \"session_id\": \"session-001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/vehicles/{{vehicle_id}}/chat",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "vehicles",
+                                "{{vehicle_id}}",
+                                "chat"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "RAG Knowledge Base",
+            "item": [
+                {
+                    "name": "Search Knowledge Base",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/rag/search?query=battery overheating&k=5",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "rag",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "query",
+                                    "value": "battery overheating"
+                                },
+                                {
+                                    "key": "k",
+                                    "value": "5"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Battery Faults",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/rag/faults/battery?k=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "rag",
+                                "faults",
+                                "battery"
+                            ],
+                            "query": [
+                                {
+                                    "key": "k",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Motor Faults",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/rag/faults/motor?k=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "rag",
+                                "faults",
+                                "motor"
+                            ],
+                            "query": [
+                                {
+                                    "key": "k",
+                                    "value": "10"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "UEBA Security",
+            "item": [
+                {
+                    "name": "Get UEBA Report",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/ueba/report",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "ueba",
+                                "report"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get UEBA Alerts",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/ueba/alerts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "ueba",
+                                "alerts"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Admin",
+            "item": [
+                {
+                    "name": "Build Knowledge Base",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/v1/admin/build-knowledge-base",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "admin",
+                                "build-knowledge-base"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}
