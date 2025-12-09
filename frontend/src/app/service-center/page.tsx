@@ -40,7 +40,7 @@ interface Technician {
 export default function ServiceCenterDashboard() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('scheduled');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     // Data states
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -79,36 +79,36 @@ export default function ServiceCenterDashboard() {
 
     async function updateAppointmentStatus(appointmentId: string, newStatus: string) {
         try {
-            // In real app, this would call an API endpoint
             const res = await fetch(`${API_BASE}/scheduling/appointments/${appointmentId}/status?status=${newStatus}`, {
                 method: 'PUT'
             });
 
-            // If service completed, trigger CAPA generation
-            if (newStatus === 'completed') {
-                const apt = appointments.find(a => a.id === appointmentId);
-                if (apt) {
-                    await generateCAPAReport(apt);
-                }
-            }
+            const data = await res.json();
 
-            toast.success(`Appointment status updated to ${newStatus}`);
-            fetchAllData();
+            if (data.success) {
+                toast.success(`Appointment status updated to ${newStatus}`);
+
+                // If service completed, trigger CAPA generation
+                if (newStatus === 'completed') {
+                    const apt = appointments.find(a => a.id === appointmentId);
+                    if (apt && (apt.urgency === 'high' || apt.urgency === 'critical')) {
+                        await generateCAPAReport(apt);
+                    }
+                }
+
+                // Auto-switch filter to show the updated appointment if needed
+                if (statusFilter !== 'all' && statusFilter !== newStatus) {
+                    setStatusFilter('all');
+                }
+
+                // Refresh data
+                await fetchAllData();
+            } else {
+                toast.error(data.message || 'Failed to update status');
+            }
         } catch (error) {
-            // Fallback: Update locally
-            setAppointments(prev =>
-                prev.map(a => a.id === appointmentId ? { ...a, status: newStatus } : a)
-            );
-
-            // Still trigger CAPA on completion
-            if (newStatus === 'completed') {
-                const apt = appointments.find(a => a.id === appointmentId);
-                if (apt && apt.urgency === 'high') {
-                    await generateCAPAReport(apt);
-                }
-            }
-
-            toast.success(`Status updated to ${newStatus}`);
+            console.error('Failed to update status:', error);
+            toast.error('Failed to update appointment status. Please try again.');
         }
     }
 
@@ -153,6 +153,8 @@ export default function ServiceCenterDashboard() {
 
     const getUrgencyBadge = (urgency: string) => {
         switch (urgency) {
+            case 'critical':
+                return <Badge variant="destructive" className="animate-pulse"><AlertTriangle className="h-3 w-3 mr-1" /> Critical</Badge>;
             case 'high':
                 return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" /> Emergency</Badge>;
             case 'medium':
@@ -275,7 +277,7 @@ export default function ServiceCenterDashboard() {
                                             key={apt.id}
                                             className={cn(
                                                 "p-4 border rounded-lg",
-                                                apt.urgency === 'high' && apt.status === 'scheduled' && "border-red-500/50 bg-red-500/5"
+                                                (apt.urgency === 'high' || apt.urgency === 'critical') && apt.status === 'scheduled' && "border-red-500/50 bg-red-500/5"
                                             )}
                                         >
                                             <div className="flex items-start justify-between mb-3">

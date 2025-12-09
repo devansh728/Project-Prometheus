@@ -12,8 +12,8 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
 
-# Import database
-from db.database import Database
+# Import database singleton
+from db.database import get_database
 
 # Optional: Gemini for conversation
 try:
@@ -122,7 +122,6 @@ class VoiceAgent:
         self.active_calls: Dict[str, VoiceCall] = {}
         self.llm = None
         self.conversation_chain = None
-        self.db = Database()
         self._initialize_llm()
 
     def _initialize_llm(self):
@@ -532,7 +531,7 @@ Available slot: {slot_time}
         """
         Save the voice call booking to the database.
         This ensures the appointment shows up in Service Center and Scheduler.
-        Includes retry logic for handling database locking.
+        Database handles its own locking now, so this is simpler.
         """
         import time
 
@@ -541,49 +540,39 @@ Available slot: {slot_time}
 
         for attempt in range(max_retries):
             try:
+                db = get_database()
                 context = call.context
                 booking = call.booked_appointment
 
                 # Calculate scheduled date and time
                 scheduled_date = datetime.now().strftime("%Y-%m-%d")
-                scheduled_time = booking.get("time", "2:30 PM")
 
                 # Get a slot ID (create one if needed)
-                slots = self.db.get_available_slots(
-                    center_id="SC-001", date=scheduled_date  # Use correct center ID
-                )
+                slots = db.get_available_slots(center_id="SC-001", date=scheduled_date)
                 slot_id = (
                     slots[0]["id"] if slots else f"slot-voice-{uuid.uuid4().hex[:8]}"
                 )
 
                 # Create the appointment with critical urgency for brake repairs
-                appointment = self.db.create_appointment(
+                appointment = db.create_appointment(
                     vehicle_id=call.vehicle_id,
-                    center_id="SC-001",  # Use correct center ID
+                    center_id="SC-001",
                     slot_id=slot_id,
                     component=booking.get("component", "brakes"),
                     diagnosis_summary=f"Emergency brake repair - Voice booking. Brake efficiency at {context.get('brake_efficiency', 15)}%. Customer: {context.get('owner_name', 'Unknown')}",
                     estimated_cost=booking.get("cost", "$150 - $400"),
-                    urgency="critical",  # Voice bookings are typically critical
-                    notes=f"Booked via Voice Agent call {call.call_id}. Alert type: {context.get('alert_type', 'brake_fade')}",
+                    urgency="critical",
+                    notes=f"Booked via Voice Agent call {call.call_id}. Alert type: {context.get('alert_type', 'brake_fade')}. [VOICE]",
                 )
 
-                # Mark as voice-booked in database
                 if appointment and appointment.get("id"):
-                    try:
-                        conn = self.db._get_connection()
-                        cursor = conn.cursor()
-                        cursor.execute(
-                            "UPDATE appointments SET booked_via = 'voice', stage = 'INTAKE' WHERE id = ?",
-                            (appointment["id"],),
-                        )
-                        conn.commit()
-                        conn.close()
-                    except Exception as e:
-                        print(f"Warning: Could not update booked_via: {e}")
-
-                print(f"✅ Voice booking saved to database: {appointment.get('id')}")
-                return appointment
+                    print(
+                        f"✅ Voice booking saved to database: {appointment.get('id')}"
+                    )
+                    return appointment
+                else:
+                    print(f"⚠️ Appointment creation returned error: {appointment}")
+                    return None
 
             except Exception as e:
                 if "locked" in str(e).lower() and attempt < max_retries - 1:
@@ -595,6 +584,8 @@ Available slot: {slot_time}
                 else:
                     print(f"⚠️ Failed to save voice booking to database: {e}")
                     return None
+
+        return None
 
         return None
 

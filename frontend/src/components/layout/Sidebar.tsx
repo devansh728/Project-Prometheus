@@ -43,6 +43,12 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
         { href: '/admin', label: 'Admin', icon: Settings },
     ];
 
+    // Add chat link with first available vehicle or default
+    const chatVin = currentVin || (vehicles.length > 0 ? vehicles[0].vehicle_id : 'demo');
+    const chatNav = [
+        { href: `/chat/${chatVin}`, label: 'AI Chat', icon: MessageSquare },
+    ];
+
     const adminNav = [
         { href: '/admin/scheduler', label: 'Scheduler', icon: Calendar },
         { href: '/admin/capa', label: 'RCA/CAPA', icon: Factory },
@@ -80,6 +86,24 @@ export function Sidebar({ open = true, onClose }: SidebarProps) {
                         {mainNav.map((item) => {
                             const Icon = item.icon;
                             const isActive = pathname === item.href;
+
+                            return (
+                                <Link key={item.href} href={item.href}>
+                                    <Button
+                                        variant={isActive ? 'secondary' : 'ghost'}
+                                        className="w-full justify-start"
+                                        onClick={onClose}
+                                    >
+                                        <Icon className="mr-2 h-4 w-4" />
+                                        {item.label}
+                                    </Button>
+                                </Link>
+                            );
+                        })}
+                        {/* AI Chat - always visible */}
+                        {chatNav.map((item) => {
+                            const Icon = item.icon;
+                            const isActive = pathname.startsWith('/chat');
 
                             return (
                                 <Link key={item.href} href={item.href}>

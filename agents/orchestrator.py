@@ -1477,18 +1477,55 @@ ALTERNATIVES:
 
         result = self.scheduling_agent.update_service_status(appointment_id, new_status)
 
-        # If completed, trigger feedback flow
-        if new_status == "completed" and result["success"]:
-            # Get vehicle_id from appointment
+        # If completed, trigger feedback flow and voice call
+        if new_status == "completed" and result.get("success"):
+            # Get appointment details
             appointments = self.scheduling_agent.db.get_appointments()
             appt = next((a for a in appointments if a["id"] == appointment_id), None)
             if appt:
+                vehicle_id = appt["vehicle_id"]
+
+                # Add notification
                 self.add_notification(
-                    appt["vehicle_id"],
-                    "service_completed",
-                    "✅ Service Complete!",
-                    "Your vehicle is ready. Please share your feedback!",
+                    vehicle_id,
+                    {
+                        "type": "service_completed",
+                        "title": "✅ Service Complete!",
+                        "body": "Your vehicle is ready for pickup. We'll call you shortly!",
+                    },
                 )
+
+                # Trigger voice call to inform customer their vehicle is ready
+                try:
+                    from agents.voice_agent import VoiceAgent
+
+                    voice_agent = VoiceAgent()
+
+                    # Initiate outbound call for pickup notification
+                    alert_data = {
+                        "component": appt.get("component", "vehicle"),
+                        "center_name": appt.get("center_name", "our service center"),
+                        "scheduled_date": appt.get("scheduled_date", "today"),
+                        "appointment_id": appointment_id,
+                        "service_complete": True,
+                    }
+
+                    call = voice_agent.initiate_call(
+                        vehicle_id=vehicle_id,
+                        alert_type="service_complete",
+                        alert_data=alert_data,
+                        owner_name="Customer",
+                    )
+
+                    if call and call.get("success"):
+                        print(
+                            f"📞 Voice call initiated for pickup notification: {call.get('call_id')}"
+                        )
+                        result["voice_call_initiated"] = True
+                        result["call_id"] = call.get("call_id")
+                except Exception as e:
+                    print(f"⚠️ Could not initiate pickup voice call: {e}")
+                    result["voice_call_initiated"] = False
 
         return result
 

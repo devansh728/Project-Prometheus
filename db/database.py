@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 import uuid
+import threading
 
 
 class AppointmentStatus(Enum):
@@ -99,6 +100,7 @@ class Database:
 
     def __init__(self, db_path: str = "data/sentinev.db"):
         self.db_path = db_path
+        self._write_lock = threading.RLock()  # Reentrant lock for write operations
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self._init_database()
         self._seed_data_if_empty()
@@ -668,62 +670,69 @@ class Database:
         urgency: str = "medium",
         notes: str = "",
     ) -> Dict:
-        """Create a new appointment."""
-        conn = self._get_connection()
-        cursor = conn.cursor()
+        """Create a new appointment with thread-safe locking."""
+        with self._write_lock:
+            conn = self._get_connection()
+            cursor = conn.cursor()
 
-        # Get slot details
-        cursor.execute(
-            "SELECT date, start_time FROM time_slots WHERE id = ?", (slot_id,)
-        )
-        slot = cursor.fetchone()
+            try:
+                # Get slot details
+                cursor.execute(
+                    "SELECT date, start_time FROM time_slots WHERE id = ?", (slot_id,)
+                )
+                slot = cursor.fetchone()
 
-        if not slot:
-            conn.close()
-            return {"error": "Slot not found"}
+                if not slot:
+                    conn.close()
+                    return {"error": "Slot not found"}
 
-        appointment_id = f"APT-{uuid.uuid4().hex[:8].upper()}"
-        now = datetime.now().isoformat()
+                appointment_id = f"APT-{uuid.uuid4().hex[:8].upper()}"
+                now = datetime.now().isoformat()
 
-        cursor.execute(
-            """
-            INSERT INTO appointments 
-            (id, vehicle_id, center_id, slot_id, component, diagnosis_summary, 
-             estimated_cost, urgency, status, created_at, scheduled_date, scheduled_time, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?)
-        """,
-            (
-                appointment_id,
-                vehicle_id,
-                center_id,
-                slot_id,
-                component,
-                diagnosis_summary,
-                estimated_cost,
-                urgency,
-                now,
-                slot["date"],
-                slot["start_time"],
-                notes,
-            ),
-        )
+                cursor.execute(
+                    """
+                    INSERT INTO appointments 
+                    (id, vehicle_id, center_id, slot_id, component, diagnosis_summary, 
+                     estimated_cost, urgency, status, created_at, scheduled_date, scheduled_time, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'scheduled', ?, ?, ?, ?)
+                """,
+                    (
+                        appointment_id,
+                        vehicle_id,
+                        center_id,
+                        slot_id,
+                        component,
+                        diagnosis_summary,
+                        estimated_cost,
+                        urgency,
+                        now,
+                        slot["date"],
+                        slot["start_time"],
+                        notes,
+                    ),
+                )
 
-        # Mark slot as booked
-        self.book_slot(slot_id)
+                # Mark slot as booked (inline to avoid nested connection)
+                cursor.execute(
+                    "UPDATE time_slots SET available = 0 WHERE id = ?", (slot_id,)
+                )
 
-        conn.commit()
-        conn.close()
+                conn.commit()
+                conn.close()
 
-        return {
-            "id": appointment_id,
-            "vehicle_id": vehicle_id,
-            "center_id": center_id,
-            "slot_id": slot_id,
-            "component": component,
-            "scheduled_date": slot["date"],
-            "scheduled_time": slot["start_time"],
-            "status": "scheduled",
-        }
+                return {
+                    "id": appointment_id,
+                    "vehicle_id": vehicle_id,
+                    "center_id": center_id,
+                    "slot_id": slot_id,
+                    "component": component,
+                    "scheduled_date": slot["date"],
+                    "scheduled_time": slot["start_time"],
+                    "status": "scheduled",
+                }
+            except Exception as e:
+                conn.close()
+                raise e
 
     def get_appointments(
         self, vehicle_id: str = None, status: str = None

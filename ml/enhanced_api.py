@@ -1470,92 +1470,100 @@ async def get_capacity_analysis(center_id: str):
 #     }
 
 
-# @app.get("/api/v1/admin/appointments-list")
-# async def admin_appointments_list(
-#     status: Optional[str] = None, date: Optional[str] = None, days: int = 7
-# ):
-#     """
-#     Get detailed list of appointments with technician assignments.
-#     Shows pending, scheduled, and completed appointments.
-#     """
-#     db = get_database()
+@app.get("/api/v1/admin/appointments-list")
+async def admin_appointments_list(
+    status: Optional[str] = None, date: Optional[str] = None, days: int = 7
+):
+    """
+    Get detailed list of appointments with technician assignments.
+    Shows pending, scheduled, and completed appointments.
+    """
+    db = get_database()
 
-#     # Get all appointments
-#     all_appointments = []
+    # Get all appointments
+    all_appointments = []
 
-#     if status:
-#         all_appointments = db.get_appointments(status=status)
-#     else:
-#         # Get both scheduled and completed
-#         scheduled = db.get_appointments(status="scheduled")
-#         completed = db.get_appointments(status="completed")
-#         in_progress = db.get_appointments(status="in_progress")
-#         all_appointments = scheduled + completed + in_progress
+    if status:
+        all_appointments = db.get_appointments(status=status)
+    else:
+        # Get both scheduled and completed
+        scheduled = db.get_appointments(status="scheduled")
+        completed = db.get_appointments(status="completed")
+        in_progress = db.get_appointments(status="in_progress")
+        all_appointments = scheduled + completed + in_progress
 
-#     # Filter by date range if no specific date
-#     if date:
-#         all_appointments = [
-#             a for a in all_appointments if a.get("scheduled_date") == date
-#         ]
-#     else:
-#         # Filter to next N days for scheduled, last N days for completed
-#         today = datetime.now().date()
-#         start_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
-#         end_date = (today + timedelta(days=days)).strftime("%Y-%m-%d")
-#         all_appointments = [
-#             a
-#             for a in all_appointments
-#             if start_date <= a.get("scheduled_date", "") <= end_date
-#         ]
+    # Filter by date range if no specific date
+    if date:
+        all_appointments = [
+            a for a in all_appointments if a.get("scheduled_date") == date
+        ]
+    else:
+        # Filter to next N days for scheduled, last N days for completed
+        today = datetime.now().date()
+        start_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
+        end_date = (today + timedelta(days=days)).strftime("%Y-%m-%d")
+        all_appointments = [
+            a
+            for a in all_appointments
+            if start_date <= a.get("scheduled_date", "") <= end_date
+        ]
 
-#     # Sort by date and time
-#     all_appointments.sort(
-#         key=lambda x: (x.get("scheduled_date", ""), x.get("scheduled_time", "")),
-#         reverse=True,
-#     )
+    # Sort by date and time
+    all_appointments.sort(
+        key=lambda x: (x.get("scheduled_date", ""), x.get("scheduled_time", "")),
+        reverse=True,
+    )
 
-#     # Add technician assignment info (from optimization results if available)
-#     from ml.labor_forecasting import TECHNICIANS
+    # Add technician assignment info (from optimization results if available)
+    from ml.labor_forecasting import TECHNICIANS
 
-#     tech_map = {t["id"]: t["name"] for t in TECHNICIANS}
+    tech_map = {t["id"]: t["name"] for t in TECHNICIANS}
 
-#     for appt in all_appointments:
-#         # Check if technician was assigned (you could store this in DB)
-#         appt["assigned_technician"] = appt.get("assigned_technician", "Unassigned")
-#         appt["technician_id"] = appt.get("technician_id", None)
+    for appt in all_appointments:
+        # Check if technician was assigned (you could store this in DB)
+        appt["assigned_technician"] = appt.get("assigned_technician", "Unassigned")
+        appt["technician_id"] = appt.get("technician_id", None)
 
-#     return {
-#         "appointments": all_appointments,
-#         "total": len(all_appointments),
-#         "by_status": {
-#             "scheduled": len(
-#                 [a for a in all_appointments if a.get("status") == "scheduled"]
-#             ),
-#             "in_progress": len(
-#                 [a for a in all_appointments if a.get("status") == "in_progress"]
-#             ),
-#             "completed": len(
-#                 [a for a in all_appointments if a.get("status") == "completed"]
-#             ),
-#         },
-#     }
-
-
-# def _count_by_key(items: list, key: str) -> dict:
-#     """Count items by key value."""
-#     counts = {}
-#     for item in items:
-#         val = item.get(key, "unknown")
-#         counts[val] = counts.get(val, 0) + 1
-#     return counts
+    return {
+        "appointments": all_appointments,
+        "total": len(all_appointments),
+        "by_status": {
+            "scheduled": len(
+                [a for a in all_appointments if a.get("status") == "scheduled"]
+            ),
+            "in_progress": len(
+                [a for a in all_appointments if a.get("status") == "in_progress"]
+            ),
+            "completed": len(
+                [a for a in all_appointments if a.get("status") == "completed"]
+            ),
+        },
+    }
 
 
-# @app.get("/api/v1/admin/technicians")
-# async def admin_get_technicians():
-#     """Get list of technicians with their specialties and capacity."""
-#     from ml.labor_forecasting import TECHNICIANS
+def _count_by_key(items: list, key: str) -> dict:
+    """Count items by key value."""
+    counts = {}
+    for item in items:
+        val = item.get(key, "unknown")
+        counts[val] = counts.get(val, 0) + 1
+    return counts
 
-#     return {"technicians": TECHNICIANS}
+
+@app.get("/api/v1/admin/technicians")
+async def admin_get_technicians():
+    """Get list of technicians with their specialties and capacity."""
+    from ml.labor_forecasting import TECHNICIANS
+
+    return {"technicians": TECHNICIANS}
+
+
+# Alias route for scheduling/appointments status (frontend compatibility)
+@app.put("/api/v1/scheduling/appointments/{appointment_id}/status")
+async def update_scheduling_status(appointment_id: str, status: str):
+    """Alias endpoint for updating appointment status from service center."""
+    orchestrator = get_orchestrator()
+    return orchestrator.update_service_status(appointment_id, status)
 
 
 # ==================== Smart Chat Endpoints ====================
@@ -1938,10 +1946,10 @@ async def get_ueba_alerts():
     if not app_state.orchestrator:
         raise HTTPException(status_code=503, detail="Orchestrator not available")
 
-    ueba_monitor = app_state.orchestrator.ueba_monitor
+    ueba = app_state.orchestrator.ueba
     return {
-        "alerts": ueba_monitor.get_alerts(),
-        "count": len(ueba_monitor.get_alerts()),
+        "alerts": ueba.get_alerts(),
+        "count": len(ueba.get_alerts()),
     }
 
 
@@ -1951,10 +1959,10 @@ async def get_ueba_agent_logs():
     if not app_state.orchestrator:
         raise HTTPException(status_code=503, detail="Orchestrator not available")
 
-    ueba_monitor = app_state.orchestrator.ueba_monitor
+    ueba = app_state.orchestrator.ueba
     return {
-        "action_log": ueba_monitor.action_log[-100:],  # Last 100 actions
-        "total_actions": len(ueba_monitor.action_log),
+        "action_log": ueba.action_history[-100:],  # Last 100 actions
+        "total_actions": len(ueba.action_history),
     }
 
 
