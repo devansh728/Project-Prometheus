@@ -325,7 +325,7 @@ data/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.11
 - Node.js 18+
 - Google Gemini API key
 
