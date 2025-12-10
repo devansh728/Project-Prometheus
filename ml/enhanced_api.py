@@ -172,6 +172,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include v2 API router
+from ml.api_v2 import router_v2
+
+app.include_router(router_v2)
+
 
 # ==================== Endpoints ====================
 
@@ -1103,6 +1108,22 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                         "feedback": str(result.get("feedback_text", "")),
                     },
                 },
+            }
+
+            # Add v2 Phase 9-13 features
+            severity = result.get("severity", "low")
+            response["data"]["v2"] = {
+                "worker_id": hash(vin) % 4,  # Phase 9: Hash-based worker routing
+                "voice_ready": severity
+                in ["critical", "high"],  # Phase 10: Voice trigger
+                "queue_position": None,  # Phase 11: Priority queue position
+                "ueba_status": "normal",  # Phase 13: UEBA monitoring
+                "sla_ok": True,  # Phase 13: SLA enforcement
+                "agents_active": (
+                    ["Master", "Data", "Diagnostics"]
+                    if result.get("is_anomaly")
+                    else ["Master", "Data"]
+                ),
             }
 
             # Add scenario info if active

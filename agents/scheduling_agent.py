@@ -21,6 +21,22 @@ except ImportError:
 
 from db.database import get_database, AppointmentStatus, ServiceUrgency
 
+# Phase 11: Scheduling utilities
+from agents.scheduling_utils import (
+    PriorityAppointment,
+    TowingRequest,
+    DemandForecast,
+    FleetScheduleResult,
+    TowingStatus,
+    SchedulingPriorityQueue,
+    calculate_urgency_score,
+    select_optimal_center,
+    dispatch_towing,
+    forecast_demand,
+    simulate_geo_distance,
+    SIMULATED_CENTER_LOCATIONS,
+)
+
 
 class SchedulingAgent:
     """
@@ -37,6 +53,19 @@ class SchedulingAgent:
         self.db = get_database()
         self.llm = None
         self._initialize_llm()
+
+        # Phase 11: Priority queue for scheduling requests
+        self.priority_queue = SchedulingPriorityQueue()
+
+        # Phase 11: Active towing requests
+        self.active_towing: Dict[str, TowingRequest] = {}
+
+        # Phase 11: Simulated vehicle locations (would come from telematics)
+        self.vehicle_locations: Dict[str, Dict] = {
+            "EV_001": {"lat": 40.7300, "lon": -73.9950},
+            "EV_002": {"lat": 40.7580, "lon": -73.9855},
+            "EV_003": {"lat": 40.6892, "lon": -74.0445},
+        }
 
         # Conversation templates
         self.propose_template = ChatPromptTemplate.from_messages(
@@ -110,7 +139,9 @@ Estimated Cost: {estimated_cost}""",
         if api_key:
             try:
                 self.llm = ChatGoogleGenerativeAI(
-                    model="gemini-2.5-flash-lite", google_api_key=api_key, temperature=0.7
+                    model="gemini-2.5-flash-lite",
+                    google_api_key=api_key,
+                    temperature=0.7,
                 )
             except Exception as e:
                 print(f"Warning: Could not initialize scheduling LLM: {e}")
@@ -625,6 +656,381 @@ Is there anything else I can help you with?""",
             }
         else:
             return {"success": False, "message": "Failed to update status."}
+
+    # ==================== Phase 11: Advanced Scheduling Methods ====================
+
+    def queue_appointment(
+        self,
+        vehicle_id: str,
+        component: str,
+        severity: str,
+        failure_probability: float = 0.5,
+        diagnosis_summary: str = "",
+        estimated_cost: str = "",
+        customer_tier: str = "standard",
+    ) -> Dict[str, Any]:
+        """
+        Add appointment request to priority queue.
+
+        Args:
+            vehicle_id: Vehicle ID
+            component: Component needing service
+            severity: Severity level
+            failure_probability: ML-predicted failure probability
+            diagnosis_summary: Diagnosis details
+            estimated_cost: Cost estimate
+            customer_tier: Customer tier for priority boost
+
+        Returns:
+            Queue confirmation with urgency score
+        """
+        urgency_score = calculate_urgency_score(
+            severity, failure_probability, customer_tier
+        )
+
+        appointment = PriorityAppointment(
+            vehicle_id=vehicle_id,
+            component=component,
+            severity=severity,
+            failure_probability=failure_probability,
+            urgency_score=urgency_score,
+            customer_tier=customer_tier,
+            diagnosis_summary=diagnosis_summary,
+            estimated_cost=estimated_cost,
+        )
+
+        self.priority_queue.push(appointment)
+
+        return {
+            "success": True,
+            "message": f"Request queued with urgency score {urgency_score:.1f}/10",
+            "urgency_score": urgency_score,
+            "queue_position": self._get_queue_position(vehicle_id),
+            "queue_size": self.priority_queue.size(),
+        }
+
+    def _get_queue_position(self, vehicle_id: str) -> int:
+        """Get position of vehicle in priority queue."""
+        all_items = self.priority_queue.get_all()
+        for i, item in enumerate(all_items):
+            if item.vehicle_id == vehicle_id:
+                return i + 1
+        return -1
+
+    def process_priority_queue(self, max_process: int = 5) -> Dict[str, Any]:
+        """
+        Process top priority appointments from queue.
+
+        Args:
+            max_process: Maximum number of appointments to process
+
+        Returns:
+            Processing results
+        """
+        processed = []
+        failed = []
+
+        for _ in range(min(max_process, self.priority_queue.size())):
+            appointment = self.priority_queue.pop()
+            if not appointment:
+                break
+
+            # Find optimal center
+            center_result = self.get_optimal_center(
+                appointment.vehicle_id, appointment.component
+            )
+
+            if not center_result.get("selected"):
+                failed.append(
+                    {
+                        "vehicle_id": appointment.vehicle_id,
+                        "reason": "No available center",
+                    }
+                )
+                continue
+
+            # Check availability and book
+            availability = self.check_availability(
+                appointment.component, appointment.severity, limit=1
+            )
+
+            if availability["available"] and availability["slots"]:
+                slot = availability["slots"][0]
+                result = self.book_appointment(
+                    vehicle_id=appointment.vehicle_id,
+                    slot_id=slot["id"],
+                    center_id=center_result["selected"],
+                    component=appointment.component,
+                    diagnosis_summary=appointment.diagnosis_summary,
+                    estimated_cost=appointment.estimated_cost,
+                    urgency=appointment.severity,
+                )
+
+                if result["success"]:
+                    processed.append(
+                        {
+                            "vehicle_id": appointment.vehicle_id,
+                            "center": center_result["selected_name"],
+                            "appointment": result.get("appointment", {}),
+                        }
+                    )
+                else:
+                    failed.append(
+                        {
+                            "vehicle_id": appointment.vehicle_id,
+                            "reason": result.get("message", "Booking failed"),
+                        }
+                    )
+            else:
+                failed.append(
+                    {
+                        "vehicle_id": appointment.vehicle_id,
+                        "reason": "No available slots",
+                    }
+                )
+
+        return {
+            "success": True,
+            "processed_count": len(processed),
+            "failed_count": len(failed),
+            "processed": processed,
+            "failed": failed,
+            "remaining_in_queue": self.priority_queue.size(),
+        }
+
+    def get_optimal_center(
+        self, vehicle_id: str, component: str = None
+    ) -> Dict[str, Any]:
+        """
+        Get optimal service center for a vehicle using geo-optimization.
+
+        Args:
+            vehicle_id: Vehicle ID
+            component: Optional component for parts check
+
+        Returns:
+            Optimal center selection with scoring
+        """
+        # Get vehicle location (simulated)
+        location = self.vehicle_locations.get(
+            vehicle_id, {"lat": 40.7128, "lon": -74.0060}  # Default NYC
+        )
+
+        # Get available centers
+        centers = self.db.get_service_centers()
+        available_center_ids = [c["id"] for c in centers]
+
+        # Simulate parts availability
+        parts_availability = {cid: True for cid in available_center_ids}
+
+        # Select optimal
+        result = select_optimal_center(
+            vehicle_lat=location["lat"],
+            vehicle_lon=location["lon"],
+            available_centers=available_center_ids,
+            component=component,
+            parts_availability=parts_availability,
+        )
+
+        return result
+
+    def initiate_emergency_towing(
+        self,
+        vehicle_id: str,
+        pickup_location: str,
+        notes: str = "",
+    ) -> Dict[str, Any]:
+        """
+        Initiate emergency towing for immobile vehicle.
+
+        Args:
+            vehicle_id: Vehicle ID
+            pickup_location: Current vehicle location description
+            notes: Additional notes
+
+        Returns:
+            Towing request details
+        """
+        # Find nearest center
+        center_result = self.get_optimal_center(vehicle_id)
+        destination = center_result.get("selected", "SC-001")
+
+        # Dispatch towing
+        tow_request = dispatch_towing(
+            vehicle_id=vehicle_id,
+            pickup_location=pickup_location,
+            destination_center=destination,
+        )
+        tow_request.notes = notes
+
+        # Store active towing
+        self.active_towing[tow_request.request_id] = tow_request
+
+        return {
+            "success": True,
+            "request_id": tow_request.request_id,
+            "status": tow_request.status.value,
+            "tow_company": tow_request.tow_company,
+            "driver_name": tow_request.driver_name,
+            "driver_phone": tow_request.driver_phone,
+            "eta_minutes": tow_request.estimated_eta_minutes,
+            "destination": center_result.get("selected_name", destination),
+            "message": f"🚗 Emergency towing dispatched! {tow_request.tow_company} will arrive in approximately {tow_request.estimated_eta_minutes} minutes.",
+        }
+
+    def get_towing_status(self, request_id: str) -> Dict[str, Any]:
+        """Get status of a towing request."""
+        tow_request = self.active_towing.get(request_id)
+
+        if not tow_request:
+            return {"success": False, "error": "Towing request not found"}
+
+        return {
+            "success": True,
+            "request_id": request_id,
+            "vehicle_id": tow_request.vehicle_id,
+            "status": tow_request.status.value,
+            "tow_company": tow_request.tow_company,
+            "eta_minutes": tow_request.estimated_eta_minutes,
+            "pickup_location": tow_request.pickup_location,
+            "destination": tow_request.destination_center,
+        }
+
+    def get_demand_forecast(self, center_id: str, date: str = None) -> Dict[str, Any]:
+        """
+        Get service demand forecast for capacity planning.
+
+        Args:
+            center_id: Service center ID
+            date: Target date (defaults to today)
+
+        Returns:
+            Hourly demand forecast
+        """
+        from datetime import datetime
+
+        if not date:
+            date = datetime.now().strftime("%Y-%m-%d")
+
+        forecasts = forecast_demand(center_id, date)
+
+        # Find peak hours
+        peak_hours = [f for f in forecasts if f.recommendation == "high_demand"]
+        low_hours = [f for f in forecasts if f.recommendation == "low_demand"]
+
+        # Generate recommendation
+        if peak_hours:
+            peak_times = ", ".join([f"{f.hour}:00" for f in peak_hours[:3]])
+            recommendation = f"Avoid scheduling during peak hours: {peak_times}"
+        else:
+            recommendation = "Normal demand expected throughout the day"
+
+        return {
+            "success": True,
+            "center_id": center_id,
+            "date": date,
+            "hourly_forecast": [
+                {
+                    "hour": f.hour,
+                    "demand": f.predicted_demand,
+                    "available_capacity": f.available_capacity,
+                    "status": f.recommendation,
+                }
+                for f in forecasts
+            ],
+            "peak_hours": [f.hour for f in peak_hours],
+            "low_demand_hours": [f.hour for f in low_hours],
+            "recommendation": recommendation,
+        }
+
+    def schedule_fleet_batch(
+        self,
+        tenant_id: str,
+        vehicle_requests: List[Dict],
+    ) -> Dict[str, Any]:
+        """
+        Schedule multiple vehicles from a fleet in batch.
+
+        Args:
+            tenant_id: Fleet tenant ID
+            vehicle_requests: List of {vehicle_id, component, severity, ...}
+
+        Returns:
+            Batch scheduling results
+        """
+        # Sort by urgency
+        sorted_requests = sorted(
+            vehicle_requests,
+            key=lambda r: calculate_urgency_score(
+                r.get("severity", "medium"),
+                r.get("failure_probability", 0.5),
+            ),
+            reverse=True,
+        )
+
+        scheduled = []
+        failed = []
+
+        for request in sorted_requests:
+            vehicle_id = request.get("vehicle_id")
+            component = request.get("component", "general")
+            severity = request.get("severity", "medium")
+
+            # Find optimal center
+            center_result = self.get_optimal_center(vehicle_id, component)
+
+            if not center_result.get("selected"):
+                failed.append(
+                    {"vehicle_id": vehicle_id, "reason": "No center available"}
+                )
+                continue
+
+            # Check availability
+            availability = self.check_availability(component, severity, limit=1)
+
+            if availability["available"] and availability["slots"]:
+                slot = availability["slots"][0]
+                result = self.book_appointment(
+                    vehicle_id=vehicle_id,
+                    slot_id=slot["id"],
+                    center_id=center_result["selected"],
+                    component=component,
+                    diagnosis_summary=request.get("diagnosis", f"{component} service"),
+                    estimated_cost=request.get("cost", "TBD"),
+                    urgency=severity,
+                    notes=f"[FLEET:{tenant_id}]",
+                )
+
+                if result["success"]:
+                    scheduled.append(
+                        {
+                            "vehicle_id": vehicle_id,
+                            "appointment": result.get("appointment"),
+                            "center": center_result["selected_name"],
+                        }
+                    )
+                else:
+                    failed.append(
+                        {"vehicle_id": vehicle_id, "reason": result.get("message")}
+                    )
+            else:
+                failed.append(
+                    {"vehicle_id": vehicle_id, "reason": "No slots available"}
+                )
+
+        # Generate summary
+        summary = f"Fleet batch scheduling complete: {len(scheduled)} scheduled, {len(failed)} failed"
+
+        return {
+            "success": True,
+            "tenant_id": tenant_id,
+            "total_requested": len(vehicle_requests),
+            "scheduled_count": len(scheduled),
+            "failed_count": len(failed),
+            "scheduled": scheduled,
+            "failed": failed,
+            "summary": summary,
+        }
 
 
 # Singleton instance

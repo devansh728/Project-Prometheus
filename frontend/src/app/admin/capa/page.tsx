@@ -16,6 +16,9 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { SupplierRiskCard } from '@/components/ui/SupplierRiskCard';
+import { ModelYearDriftPanel } from '@/components/ui/ModelYearDriftPanel';
+import { LLMRecommendationPanel } from '@/components/ui/LLMRecommendationPanel';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -518,6 +521,15 @@ export default function CAPADashboard() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Supplier Risk - Demo */}
+                            <SupplierRiskCard />
+
+                            {/* Model Year Drift - Demo */}
+                            <ModelYearDriftPanel component={selectedComponent} />
+
+                            {/* LLM Recommendations - Demo */}
+                            <LLMRecommendationPanel component={selectedComponent} />
                         </div>
                     </div>
                 </main>

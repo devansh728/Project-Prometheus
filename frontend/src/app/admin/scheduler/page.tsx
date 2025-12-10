@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TetrisCalendar, TetrisDay, TetrisAppointment, generateDemoTetrisData } from '@/components/ui/TetrisCalendar';
+import { PriorityQueueWidget } from '@/components/ui/PriorityQueueWidget';
+import { TowingDispatchPanel } from '@/components/ui/TowingDispatchPanel';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -702,6 +704,10 @@ export default function SchedulerDashboard() {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Priority Queue & Towing - Demo */}
+                        <PriorityQueueWidget />
+                        <TowingDispatchPanel />
 
                         {/* Optimize Schedule */}
                         <Card className="lg:col-span-3">

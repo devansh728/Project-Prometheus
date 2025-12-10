@@ -115,4 +115,15 @@ temp/
 # Chroma
 chroma_data/
 
-*.md
+# ml models
+ml_pipeline/datasets/
+ml_pipeline/synthetic_data/raw_frames
+
+DEMOPLAN.md
+ENCHANCEMENTS2.json
+ENHANCEMENTS.md
+FRONTEND_SPEC.md
+NEW_TASK.json
+PROJECT_FEATURES.md
+PROMPT.md
+.gitignore

@@ -21,6 +21,18 @@ from agents.diagnosis_agent import get_diagnosis_agent, DiagnosisAgent
 from agents.scheduling_agent import get_scheduling_agent, SchedulingAgent
 from agents.feedback_agent import get_feedback_agent, FeedbackAgent
 
+# Phase 9: New imports for enhanced orchestration
+try:
+    from db.monitoring import get_monitoring_db, MonitoringDB
+    from ml.fleet_manager import get_fleet_manager, FleetManager
+    from ml.threshold_adapter import get_threshold_manager, AdaptiveThresholdManager
+    import hashlib
+
+    PHASE9_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ Phase 9 components not fully available: {e}")
+    PHASE9_AVAILABLE = False
+
 # LangGraph imports
 try:
     from langgraph.graph import StateGraph, END
@@ -300,8 +312,23 @@ IMPORTANT: Keep responses under 100 words unless asked for details."""
         # New: Chat context store (for diagnosis -> chat redirect)
         self.chat_contexts: Dict[str, Dict] = {}  # vehicle_id -> diagnosis context
 
+        # Phase 9: Enhanced orchestration components
+        self.num_workers: int = 4  # Number of virtual workers for hash routing
+        self.monitoring_db: Optional[MonitoringDB] = None
+        self.fleet_manager: Optional[FleetManager] = None
+        self.threshold_manager: Optional[AdaptiveThresholdManager] = None
+
+        # Phase 9: Severity-based decision logic
+        self.severity_actions = {
+            "critical": ["voice_call", "towing", "rca_escalation"],
+            "high": ["voice_call", "schedule_booking"],
+            "medium": ["push_notification", "optional_call"],
+            "low": ["monitor_only"],
+        }
+
         self._initialize_llm()
         self._initialize_agents()
+        self._initialize_phase9_components()
         if LANGGRAPH_AVAILABLE:
             self._build_workflow()
 
@@ -312,6 +339,136 @@ IMPORTANT: Keep responses under 100 words unless asked for details."""
         self.scheduling_agent = get_scheduling_agent()
         self.feedback_agent = get_feedback_agent()
         print("✓ Safety, Diagnosis, Scheduling, and Feedback agents initialized")
+
+    def _initialize_phase9_components(self):
+        """Initialize Phase 9: monitoring, fleet manager, threshold adapter."""
+        if not PHASE9_AVAILABLE:
+            print("⚠️ Phase 9 components skipped (not available)")
+            return
+
+        try:
+            self.monitoring_db = get_monitoring_db()
+            self.fleet_manager = get_fleet_manager()
+            self.threshold_manager = get_threshold_manager()
+            print("✓ Phase 9 components initialized (monitoring, fleet, thresholds)")
+        except Exception as e:
+            print(f"⚠️ Phase 9 initialization error: {e}")
+
+    def _route_to_worker(self, vehicle_id: str) -> int:
+        """Hash-based routing to virtual worker for load balancing."""
+        hash_val = int(hashlib.md5(vehicle_id.encode()).hexdigest(), 16)
+        return hash_val % self.num_workers
+
+    def _execute_severity_decision(
+        self, vehicle_id: str, severity: str, result: Dict
+    ) -> Dict:
+        """
+        Execute severity-based decision routing.
+
+        Decision logic from ENHANCEMENTS2.json:
+        - critical: Immediate voice alert + towing + RCA
+        - high: Voice-first booking recommendation
+        - medium: Push notification + optional call
+        - low: Monitor only
+        """
+        actions = self.severity_actions.get(severity, ["monitor_only"])
+        executed_actions = []
+
+        for action in actions:
+            try:
+                if action == "voice_call":
+                    # Trigger voice call notification
+                    self._add_notification(
+                        vehicle_id,
+                        {
+                            "type": "voice_call",
+                            "severity": severity,
+                            "message": f"Critical issue detected: {result.get('anomaly_type', 'unknown')}",
+                            "failure_risk": result.get("failure_risk_pct", 0),
+                        },
+                    )
+                    executed_actions.append("voice_call")
+
+                elif action == "towing":
+                    # For critical failures, trigger towing workflow
+                    self._add_notification(
+                        vehicle_id,
+                        {
+                            "type": "towing",
+                            "severity": "critical",
+                            "message": "Emergency: Vehicle requires towing to service center",
+                        },
+                    )
+                    executed_actions.append("towing")
+
+                elif action == "rca_escalation":
+                    # Escalate to RCA/CAPA agent
+                    if self.monitoring_db:
+                        self.monitoring_db.log_alert(
+                            vehicle_id=vehicle_id,
+                            alert_type="rca_escalation",
+                            severity=severity,
+                            probability=result.get("failure_risk_pct", 0) / 100,
+                            message=f"Escalated for RCA: {result.get('anomaly_type')}",
+                            action_taken="rca_triggered",
+                        )
+                    executed_actions.append("rca_escalation")
+
+                elif action == "schedule_booking":
+                    # Add scheduling suggestion to notification
+                    self._add_notification(
+                        vehicle_id,
+                        {
+                            "type": "schedule_suggestion",
+                            "severity": severity,
+                            "message": "We recommend scheduling a service appointment soon.",
+                            "component": (
+                                result.get("affected_components", ["unknown"])[0]
+                                if result.get("affected_components")
+                                else "general"
+                            ),
+                        },
+                    )
+                    executed_actions.append("schedule_booking")
+
+                elif action == "push_notification":
+                    self._add_notification(
+                        vehicle_id,
+                        {
+                            "type": "push",
+                            "severity": severity,
+                            "message": f"Vehicle health alert: {result.get('anomaly_type', 'Check vehicle')}",
+                        },
+                    )
+                    executed_actions.append("push_notification")
+
+            except Exception as e:
+                print(f"Error executing {action}: {e}")
+
+        # Log to monitoring DB
+        if self.monitoring_db and PHASE9_AVAILABLE:
+            try:
+                self.monitoring_db.log_inference(
+                    vehicle_id=vehicle_id,
+                    failure_prob=result.get("failure_risk_pct", 0) / 100,
+                    severity=severity,
+                    anomaly_score=result.get("anomaly_score", 0),
+                    is_anomaly=result.get("is_anomaly", False),
+                )
+            except Exception as e:
+                print(f"Monitoring log error: {e}")
+
+        result["executed_actions"] = executed_actions
+        return result
+
+    def _add_notification(self, vehicle_id: str, notification: Dict) -> None:
+        """Add notification to vehicle's queue."""
+        notification["timestamp"] = datetime.now().isoformat()
+        notification["read"] = False
+
+        if vehicle_id not in self.notification_queue:
+            self.notification_queue[vehicle_id] = []
+        self.notification_queue[vehicle_id].append(notification)
 
     def _initialize_llm(self):
         """Initialize the LLM for conversation."""
@@ -514,7 +671,7 @@ Action: {alert.get('recommended_action', 'Contact service')}
         session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Process telemetry through the full workflow.
+        Process telemetry through the full workflow with Phase 9 enhancements.
 
         Args:
             vehicle_id: Vehicle identifier
@@ -522,8 +679,15 @@ Action: {alert.get('recommended_action', 'Contact service')}
             session_id: Optional session ID for state persistence
 
         Returns:
-            Processing result with anomaly detection and scoring
+            Processing result with anomaly detection, scoring, and executed actions
         """
+        import time
+
+        start_time = time.time()
+
+        # Phase 9: Hash-based worker routing
+        worker_id = self._route_to_worker(vehicle_id)
+
         # Create or update state
         state = create_initial_state(vehicle_id, session_id)
         state["current_telemetry"] = telemetry
@@ -532,11 +696,42 @@ Action: {alert.get('recommended_action', 'Contact service')}
             # Run through LangGraph workflow
             config = {"configurable": {"thread_id": session_id or vehicle_id}}
             result = self.workflow.invoke(state, config)
-            return result
         else:
             # Fallback to direct agent call
             agent = self.get_data_agent(vehicle_id)
-            return agent.analyze(state)
+            result = agent.analyze(state)
+
+        # Convert result to dict if needed
+        if hasattr(result, "items"):
+            result_dict = dict(result)
+        else:
+            result_dict = result if isinstance(result, dict) else {}
+
+        # Compute latency
+        latency_ms = (time.time() - start_time) * 1000
+        result_dict["inference_latency_ms"] = latency_ms
+        result_dict["worker_id"] = worker_id
+
+        # Phase 9: Execute severity-based decision routing
+        severity = result_dict.get("severity", "low")
+        if severity in ["high", "critical"]:
+            result_dict = self._execute_severity_decision(
+                vehicle_id, severity, result_dict
+            )
+
+        # Log UEBA action
+        self.ueba.log_action(
+            "orchestrator",
+            "process_telemetry",
+            {
+                "vehicle_id": vehicle_id,
+                "worker_id": worker_id,
+                "severity": severity,
+                "latency_ms": latency_ms,
+            },
+        )
+
+        return result_dict
 
     def chat(
         self, vehicle_id: str, user_message: str, session_id: Optional[str] = None

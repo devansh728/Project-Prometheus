@@ -1,0 +1,169 @@
+EV TELEMETRY ML PIPELINE - RUNBOOK
+==================================
+
+QUICK START
+-----------
+1. Activate environment:
+   .\venv\Scripts\Activate.ps1
+
+2. Start inference server:
+   uvicorn ml_pipeline.services.fastapi_orchestrator:app --port 8000
+
+3. Run demo client:
+   python ml_pipeline/services/demo_client.py --vehicle EV_001 --mode failure
+
+4. View alerts:
+   curl http://localhost:8000/alerts
+
+
+DIRECTORY STRUCTURE
+-------------------
+ml_pipeline/
+├── config.json             # Central configuration
+├── telemetry_schema.json   # Data schema
+├── labeling_spec.txt       # Label definitions
+├── evaluation_metrics.txt  # Success criteria
+├── README.txt              # Module overview
+│
+├── datasets/               # Preprocessed train/val/test
+│   ├── train_full.parquet
+│   ├── val_full.parquet
+│   ├── test_full.parquet
+│   └── normalization_stats.json
+│
+├── models/                 # Trained model artifacts
+│   ├── lgbm_failure_predictor.txt
+│   ├── lgbm_severity_classifier.txt
+│   ├── lstm_ae_best.pt
+│   ├── thresholds.json
+│   └── evaluation_report.json
+│
+├── synthetic_data/         # Generated training data
+│   ├── raw_frames/
+│   └── aggregates/
+│
+├── knowledge_base/         # RAG knowledge
+│   └── ev_repair_manual.json
+│
+├── services/               # Runtime services
+│   ├── fastapi_orchestrator.py
+│   ├── rag_recommender.py
+│   ├── monitoring.py
+│   └── demo_client.py
+│
+├── scripts/                # Training scripts
+│   ├── generate_synthetic.py
+│   ├── preprocessing.py
+│   ├── train_lgbm.py
+│   ├── train_lstm_ae.py
+│   └── evaluate_models.py
+│
+└── logs/                   # Runtime metrics
+
+
+COMMANDS REFERENCE
+------------------
+
+Data Generation:
+  python ml_pipeline/scripts/generate_synthetic.py \
+    --config ml_pipeline/config.json \
+    --output ml_pipeline/synthetic_data
+
+Preprocessing:
+  python ml_pipeline/scripts/preprocessing.py \
+    --config ml_pipeline/config.json \
+    --input ml_pipeline/synthetic_data \
+    --output ml_pipeline/datasets
+
+Train LightGBM:
+  python ml_pipeline/scripts/train_lgbm.py \
+    --config ml_pipeline/config.json \
+    --data ml_pipeline/datasets \
+    --output ml_pipeline/models
+
+Train LSTM-AE:
+  python ml_pipeline/scripts/train_lstm_ae.py \
+    --config ml_pipeline/config.json \
+    --data ml_pipeline/datasets \
+    --output ml_pipeline/models
+
+Evaluate Models:
+  python ml_pipeline/scripts/evaluate_models.py \
+    --config ml_pipeline/config.json \
+    --data ml_pipeline/datasets \
+    --models ml_pipeline/models
+
+Start Server:
+  uvicorn ml_pipeline.services.fastapi_orchestrator:app --port 8000
+
+Test Demo:
+  python ml_pipeline/services/demo_client.py --vehicle EV_001 --mode failure
+
+
+API ENDPOINTS
+-------------
+GET  /             Health check
+GET  /health       Detailed health status
+POST /telemetry    Ingest single frame
+WS   /ws/telemetry WebSocket streaming
+GET  /vehicles     List active vehicles
+GET  /alerts       View recent alerts
+GET  /thresholds   Current thresholds
+
+
+MODEL PERFORMANCE
+-----------------
+Failure Predictor (LightGBM):
+  - AUC-ROC: 0.97
+  - F1 Score: 0.99
+  - Precision@100: 1.00
+
+Anomaly Detector (LSTM-AE):
+  - AUC-ROC: 0.90
+  - Precision: 0.86
+
+Severity Classifier:
+  - 4 classes: low, medium, high, critical
+
+
+THRESHOLDS
+----------
+Failure Prediction: 0.81 (for 80% precision)
+Anomaly Detection: 0.95 (reconstruction error percentile)
+Alert Cooldown: 30 minutes
+
+
+FAILURE TYPES DETECTED
+----------------------
+1. battery_degradation - Reduced range, cell voltage imbalance
+2. motor_bearing_wear - Vibration increase, grinding noise
+3. inverter_overheating - Power limitations, temp spikes
+4. thermal_runaway_risk - CRITICAL: Rapid temp increase
+5. charging_fault - Won't charge, slow charging
+
+
+RETRAINING TRIGGERS
+-------------------
+- 3+ drift alerts accumulated
+- 30+ days since last training
+- 10,000+ new samples collected
+- Performance drop > 10%
+
+
+TROUBLESHOOTING
+---------------
+Server won't start:
+  - Check models exist in ml_pipeline/models/
+  - Verify config.json paths are correct
+
+No predictions returned:
+  - Need 300 frames to fill window before first prediction
+  - Check stride (60s by default)
+
+JSON serialization error:
+  - Fixed: numpy types now converted to Python native types
+
+
+DEPENDENCIES
+------------
+pip install numpy pandas lightgbm torch fastapi uvicorn pydantic pyarrow

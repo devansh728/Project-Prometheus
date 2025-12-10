@@ -1,0 +1,240 @@
+{
+    "manual_version": "1.0",
+    "vehicle_category": "Electric Vehicle",
+    "sections": [
+        {
+            "id": "battery_system",
+            "title": "High-Voltage Battery System",
+            "topics": [
+                {
+                    "id": "battery_degradation",
+                    "title": "Battery Degradation Diagnosis",
+                    "symptoms": [
+                        "Reduced range",
+                        "Slow charging",
+                        "SOC drops quickly",
+                        "Cell voltage imbalance > 0.1V"
+                    ],
+                    "dtc_codes": [
+                        "P0A80",
+                        "P0A81",
+                        "P0A82"
+                    ],
+                    "severity_levels": {
+                        "low": "Cell delta < 0.15V - Monitor during next service",
+                        "medium": "Cell delta 0.15-0.25V - Schedule battery health test",
+                        "high": "Cell delta > 0.25V - Immediate battery module inspection required"
+                    },
+                    "repair_procedures": [
+                        "1. Connect diagnostic tool and read battery cell voltages",
+                        "2. Check for thermal damage or moisture ingress",
+                        "3. Balance cells using manufacturer tool if delta < 0.2V",
+                        "4. Replace affected module if individual cell variance > 0.3V",
+                        "5. Update battery management firmware after repair"
+                    ],
+                    "parts": [
+                        "Battery module",
+                        "BMS controller",
+                        "Cell balancing resistors"
+                    ],
+                    "estimated_time": "2-6 hours",
+                    "cost_range": "$500-$8000"
+                },
+                {
+                    "id": "thermal_runaway",
+                    "title": "Thermal Runaway Prevention",
+                    "symptoms": [
+                        "Battery temp > 50°C",
+                        "Rapid temp increase",
+                        "Smoke or unusual smell",
+                        "Cell delta > 0.3V"
+                    ],
+                    "dtc_codes": [
+                        "P0A7F",
+                        "P1E00",
+                        "U0100"
+                    ],
+                    "severity_levels": {
+                        "critical": "IMMEDIATE: Stop vehicle, evacuate, call emergency services"
+                    },
+                    "repair_procedures": [
+                        "1. DO NOT approach if smoke visible - call fire services",
+                        "2. Once safe, disconnect 12V battery to isolate system",
+                        "3. Allow battery to cool for minimum 24 hours",
+                        "4. Transport to authorized center on flatbed only",
+                        "5. Full battery pack replacement required after thermal event"
+                    ],
+                    "parts": [
+                        "Complete battery pack",
+                        "HV junction box",
+                        "Cooling system"
+                    ],
+                    "estimated_time": "8-16 hours",
+                    "cost_range": "$15000-$25000"
+                },
+                {
+                    "id": "charging_fault",
+                    "title": "Charging System Faults",
+                    "symptoms": [
+                        "Won't charge",
+                        "Slow charging",
+                        "Charging stops unexpectedly"
+                    ],
+                    "dtc_codes": [
+                        "P0A84",
+                        "P0AF1",
+                        "P0AF2",
+                        "P0AF3"
+                    ],
+                    "severity_levels": {
+                        "low": "Occasional slow charge - Clean charging port",
+                        "medium": "Frequent charge interruption - Inspect onboard charger",
+                        "high": "Cannot charge - Replace charging module"
+                    },
+                    "repair_procedures": [
+                        "1. Inspect charging port for debris or damage",
+                        "2. Test charging cable with alternate vehicle",
+                        "3. Check onboard charger relay and fuses",
+                        "4. Verify CAN communication between charger and BMS",
+                        "5. Replace onboard charger if fault persists"
+                    ],
+                    "parts": [
+                        "Charging port assembly",
+                        "Onboard charger",
+                        "HV relay"
+                    ],
+                    "estimated_time": "1-4 hours",
+                    "cost_range": "$200-$3000"
+                }
+            ]
+        },
+        {
+            "id": "drive_system",
+            "title": "Electric Drive System",
+            "topics": [
+                {
+                    "id": "motor_bearing_wear",
+                    "title": "Motor Bearing Wear",
+                    "symptoms": [
+                        "Grinding noise",
+                        "Increased vibration",
+                        "Motor temp spikes",
+                        "Reduced torque"
+                    ],
+                    "dtc_codes": [
+                        "P0A1A",
+                        "P0A1B"
+                    ],
+                    "severity_levels": {
+                        "low": "Slight vibration increase - Monitor at next service",
+                        "medium": "Audible noise at low speed - Schedule inspection",
+                        "high": "Grinding noise or temp > 120°C - Immediate service required"
+                    },
+                    "repair_procedures": [
+                        "1. Record vibration signature with accelerometer",
+                        "2. Drain and inspect motor coolant for metal particles",
+                        "3. Remove motor assembly and inspect bearings",
+                        "4. Replace front and rear motor bearings as pair",
+                        "5. Balance rotor and test under load"
+                    ],
+                    "parts": [
+                        "Motor bearings (pair)",
+                        "Rotor seal",
+                        "Motor coolant"
+                    ],
+                    "estimated_time": "4-8 hours",
+                    "cost_range": "$1500-$4000"
+                },
+                {
+                    "id": "inverter_overheating",
+                    "title": "Inverter Overheating",
+                    "symptoms": [
+                        "Power limitation",
+                        "Inverter temp > 80°C",
+                        "Reduced acceleration"
+                    ],
+                    "dtc_codes": [
+                        "P0A78",
+                        "P0A79"
+                    ],
+                    "severity_levels": {
+                        "low": "Temp 70-80°C during heavy load - Normal operation",
+                        "medium": "Temp > 85°C frequently - Clean cooling fins",
+                        "high": "Temp > 95°C - Replace thermal paste and check pump"
+                    },
+                    "repair_procedures": [
+                        "1. Check coolant level and condition",
+                        "2. Verify cooling pump operation and flow rate",
+                        "3. Inspect radiator for blockage",
+                        "4. Remove inverter and replace thermal interface material",
+                        "5. Flush cooling system and refill with fresh coolant"
+                    ],
+                    "parts": [
+                        "Thermal paste",
+                        "Coolant",
+                        "Water pump",
+                        "Inverter module"
+                    ],
+                    "estimated_time": "2-6 hours",
+                    "cost_range": "$100-$5000"
+                }
+            ]
+        },
+        {
+            "id": "safety_systems",
+            "title": "Safety & ADAS",
+            "topics": [
+                {
+                    "id": "regen_fault",
+                    "title": "Regenerative Braking Issues",
+                    "symptoms": [
+                        "Weak regen",
+                        "Regen cuts out",
+                        "Jerky deceleration"
+                    ],
+                    "dtc_codes": [
+                        "P0570",
+                        "P0571"
+                    ],
+                    "severity_levels": {
+                        "low": "Slightly reduced regen - Recalibrate brake sensor",
+                        "medium": "Intermittent regen - Check brake pedal position sensor",
+                        "high": "No regen - Inspect motor controller"
+                    },
+                    "repair_procedures": [
+                        "1. Calibrate brake pedal position sensor",
+                        "2. Check regen settings in vehicle configuration",
+                        "3. Verify battery SOC allows regen (not at 100%)",
+                        "4. Test motor controller regen command signal",
+                        "5. Replace brake pedal sensor if out of specification"
+                    ],
+                    "parts": [
+                        "Brake pedal sensor",
+                        "Motor controller software update"
+                    ],
+                    "estimated_time": "1-2 hours",
+                    "cost_range": "$100-$500"
+                }
+            ]
+        }
+    ],
+    "general_maintenance": {
+        "scheduled_intervals": {
+            "6_months": [
+                "Tire rotation",
+                "Cabin air filter inspection",
+                "12V battery check"
+            ],
+            "12_months": [
+                "Brake fluid test",
+                "Coolant level check",
+                "HV cable inspection"
+            ],
+            "24_months": [
+                "Coolant flush",
+                "Brake pad inspection",
+                "Suspension check"
+            ]
+        }
+    }
+}

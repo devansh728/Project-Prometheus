@@ -1,0 +1,251 @@
+{
+    "project": "EV Telematics Anomaly & Failure Prediction",
+    "version": "1.0.0",
+    "data_generation": {
+        "num_vehicles": 10,
+        "duration_days_per_vehicle": 7,
+        "sampling_sec": 1,
+        "aggregate_window_sec": 60
+    },
+    "vehicle_profiles": [
+        {
+            "vehicle_id": "EV_001",
+            "type": "sedan",
+            "battery_kwh": 60,
+            "motor_kw": 150,
+            "ambient_temp": 25
+        },
+        {
+            "vehicle_id": "EV_002",
+            "type": "sedan",
+            "battery_kwh": 75,
+            "motor_kw": 200,
+            "ambient_temp": 30
+        },
+        {
+            "vehicle_id": "EV_003",
+            "type": "suv",
+            "battery_kwh": 100,
+            "motor_kw": 300,
+            "ambient_temp": 20
+        },
+        {
+            "vehicle_id": "EV_004",
+            "type": "suv",
+            "battery_kwh": 85,
+            "motor_kw": 250,
+            "ambient_temp": 35
+        },
+        {
+            "vehicle_id": "EV_005",
+            "type": "compact",
+            "battery_kwh": 40,
+            "motor_kw": 100,
+            "ambient_temp": 22
+        },
+        {
+            "vehicle_id": "EV_006",
+            "type": "compact",
+            "battery_kwh": 45,
+            "motor_kw": 120,
+            "ambient_temp": 28
+        },
+        {
+            "vehicle_id": "EV_007",
+            "type": "truck",
+            "battery_kwh": 150,
+            "motor_kw": 400,
+            "ambient_temp": 18
+        },
+        {
+            "vehicle_id": "EV_008",
+            "type": "truck",
+            "battery_kwh": 180,
+            "motor_kw": 450,
+            "ambient_temp": 32
+        },
+        {
+            "vehicle_id": "EV_009",
+            "type": "sports",
+            "battery_kwh": 80,
+            "motor_kw": 350,
+            "ambient_temp": 24
+        },
+        {
+            "vehicle_id": "EV_010",
+            "type": "sports",
+            "battery_kwh": 90,
+            "motor_kw": 400,
+            "ambient_temp": 26
+        }
+    ],
+    "failure_injection": {
+        "battery_degradation": {
+            "probability": 0.0003,
+            "lead_time_hours": 72,
+            "severity": 3,
+            "dtc_codes": [
+                "P0A80",
+                "P0A7F"
+            ]
+        },
+        "motor_bearing_wear": {
+            "probability": 0.0004,
+            "lead_time_hours": 48,
+            "severity": 3,
+            "dtc_codes": [
+                "P0A3F"
+            ]
+        },
+        "inverter_overheating": {
+            "probability": 0.0002,
+            "lead_time_hours": 24,
+            "severity": 4,
+            "dtc_codes": [
+                "P0A78"
+            ]
+        },
+        "thermal_runaway_risk": {
+            "probability": 0.0001,
+            "lead_time_hours": 6,
+            "severity": 4,
+            "dtc_codes": [
+                "P0AA6",
+                "P0A80"
+            ]
+        },
+        "charging_fault": {
+            "probability": 0.0003,
+            "lead_time_hours": 48,
+            "severity": 2,
+            "dtc_codes": [
+                "P0A09",
+                "P0560"
+            ]
+        }
+    },
+    "feature_engineering": {
+        "windows": {
+            "short": {
+                "length_sec": 60,
+                "stride_sec": 30
+            },
+            "medium": {
+                "length_sec": 300,
+                "stride_sec": 60
+            },
+            "long": {
+                "length_sec": 3600,
+                "stride_sec": 600
+            }
+        },
+        "aggregations": [
+            "mean",
+            "std",
+            "min",
+            "max",
+            "p25",
+            "p50",
+            "p75",
+            "skew",
+            "kurtosis",
+            "slope"
+        ],
+        "derived_features": [
+            "power_kw",
+            "efficiency_wh_km",
+            "motor_load_factor",
+            "thermal_gradient",
+            "soc_delta_rate",
+            "accel_magnitude",
+            "vibration_energy"
+        ]
+    },
+    "labeling": {
+        "failure_horizons_days": [
+            7,
+            14,
+            30
+        ],
+        "default_horizon_days": 14,
+        "anomaly_threshold_method": "percentile",
+        "anomaly_threshold_percentile": 99
+    },
+    "train_val_test_split": {
+        "train_vehicles": [
+            "EV_001",
+            "EV_002",
+            "EV_003",
+            "EV_004",
+            "EV_005",
+            "EV_006"
+        ],
+        "val_vehicles": [
+            "EV_007",
+            "EV_008"
+        ],
+        "test_vehicles": [
+            "EV_009",
+            "EV_010"
+        ]
+    },
+    "models": {
+        "lstm_autoencoder": {
+            "encoder_layers": [
+                64,
+                32
+            ],
+            "latent_dim": 16,
+            "decoder_layers": [
+                32,
+                64
+            ],
+            "sequence_length": 60,
+            "learning_rate": 0.001,
+            "batch_size": 64,
+            "epochs": 100,
+            "early_stopping_patience": 10
+        },
+        "lightgbm_failure": {
+            "objective": "binary",
+            "metric": "auc",
+            "num_leaves": 64,
+            "learning_rate": 0.05,
+            "n_estimators": 1000,
+            "early_stopping_rounds": 50,
+            "feature_fraction": 0.8,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 5
+        },
+        "lightgbm_severity": {
+            "objective": "multiclass",
+            "num_class": 4,
+            "metric": "multi_logloss",
+            "num_leaves": 32,
+            "learning_rate": 0.05,
+            "n_estimators": 500
+        }
+    },
+    "thresholds": {
+        "anomaly_score": 0.95,
+        "failure_probability": 0.5,
+        "alert_cooldown_minutes": 30
+    },
+    "digital_twin": {
+        "vehicle_embedding_dim": 16,
+        "update_frequency": "daily"
+    },
+    "inference": {
+        "latency_budget_ms": 200,
+        "batch_size": 1,
+        "buffer_size_frames": 3600
+    },
+    "paths": {
+        "raw_frames": "ml_pipeline/synthetic_data/raw_frames",
+        "aggregates": "ml_pipeline/synthetic_data/aggregates",
+        "datasets": "ml_pipeline/datasets",
+        "models": "ml_pipeline/models",
+        "logs": "ml_pipeline/logs",
+        "vector_db": "ml_pipeline/rag/vector_index"
+    }
+}

@@ -15,6 +15,30 @@ from enum import Enum
 # Import database singleton
 from db.database import get_database
 
+# Phase 10: Voice personas and emotion detection
+from agents.voice_personas import (
+    EmotionState,
+    AlertScenario,
+    VoicePersona,
+    PERSONAS,
+    detect_emotion,
+    get_persona_for_scenario,
+    get_emotion_response_modifier,
+    get_scenario_script,
+    translate_technical_term,
+    get_health_coaching_tip,
+    SCENARIO_SCRIPTS,
+    EMOTION_RESPONSE_MODIFIERS,
+)
+
+# RAG Knowledge Base for Q&A
+try:
+    from ml.rag_knowledge import MLKnowledgeBase
+
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+
 # Optional: Gemini for conversation
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
@@ -72,6 +96,11 @@ class VoiceCall:
     context: Dict[str, Any] = field(default_factory=dict)
     proposed_slot: Optional[Dict] = None
     booked_appointment: Optional[Dict] = None
+    # Phase 10: Emotion tracking and persona
+    current_emotion: EmotionState = EmotionState.CALM
+    emotion_history: List[EmotionState] = field(default_factory=list)
+    persona: Optional[VoicePersona] = None
+    scenario: AlertScenario = AlertScenario.GENERAL_WARNING
 
 
 # Conversation scripts for Brake Fade scenario
@@ -118,11 +147,28 @@ class VoiceAgent:
     """
 
     def __init__(self):
-        """Initialize the Voice Agent."""
+        """Initialize the Voice Agent with Phase 10 enhancements."""
         self.active_calls: Dict[str, VoiceCall] = {}
         self.llm = None
         self.conversation_chain = None
+        self.knowledge_base = None
         self._initialize_llm()
+        self._initialize_rag()
+
+    def _initialize_rag(self):
+        """Initialize RAG knowledge base for Q&A during calls."""
+        if not RAG_AVAILABLE:
+            print("⚠️ RAG knowledge base not available")
+            return
+
+        try:
+            self.knowledge_base = MLKnowledgeBase()
+            if self.knowledge_base.load_knowledge_base():
+                print("✅ Voice Agent RAG initialized")
+            else:
+                print("⚠️ RAG knowledge base not built yet")
+        except Exception as e:
+            print(f"⚠️ RAG initialization failed: {e}")
 
     def _initialize_llm(self):
         """Initialize LLM for dynamic conversation."""
@@ -163,6 +209,172 @@ Available slot: {slot_time}
         except Exception as e:
             print(f"⚠️ Voice Agent LLM init failed: {e}")
 
+    # ==================== Phase 10: Emotion-Adaptive Methods ====================
+
+    def _detect_and_track_emotion(
+        self, call: VoiceCall, user_text: str
+    ) -> EmotionState:
+        """
+        Detect user's emotional state and track it in call history.
+
+        Args:
+            call: Active voice call
+            user_text: User's spoken text
+
+        Returns:
+            Detected EmotionState
+        """
+        emotion = detect_emotion(user_text)
+        call.current_emotion = emotion
+        call.emotion_history.append(emotion)
+        return emotion
+
+    def _adapt_message_for_emotion(self, message: str, emotion: EmotionState) -> str:
+        """
+        Adapt response message based on user's emotional state.
+
+        Args:
+            message: Original response message
+            emotion: Detected emotional state
+
+        Returns:
+            Emotion-adapted message
+        """
+        modifier = get_emotion_response_modifier(emotion)
+        prefix = modifier.get("prefix", "")
+
+        # For panicked users, break into steps
+        if modifier.get("break_into_steps") and "." in message:
+            sentences = message.split(".")
+            if len(sentences) > 2:
+                message = ". ".join(sentences[:2]) + "."
+
+        # Simplify technical terms if needed
+        if modifier.get("simplify"):
+            for term, translation in [
+                ("brake fade", "loss of braking power"),
+                ("thermal runaway", "dangerous overheating"),
+                ("cell imbalance", "uneven battery charge"),
+            ]:
+                message = message.replace(term, translation)
+
+        return prefix + message
+
+    def _answer_question_with_rag(
+        self, call: VoiceCall, question: str
+    ) -> Optional[str]:
+        """
+        Answer customer question using RAG knowledge base.
+
+        Args:
+            call: Active voice call with context
+            question: Customer's question
+
+        Returns:
+            RAG-generated answer or None
+        """
+        if not self.knowledge_base:
+            return None
+
+        try:
+            # Get context from call
+            alert_type = call.context.get("alert_type", "")
+            component = call.context.get("component", "general")
+
+            # Search knowledge base
+            results = self.knowledge_base.semantic_search(question, k=3)
+
+            if not results:
+                return None
+
+            # Extract relevant info
+            context_text = "\n".join([r.page_content for r in results[:2]])
+
+            # Use LLM to synthesize answer if available
+            if self.llm:
+                try:
+                    prompt = f"""Based on this technical knowledge:
+{context_text}
+
+Answer this customer question briefly (1-2 sentences) in simple language:
+"{question}"
+
+Context: The customer has a {alert_type} issue with their EV."""
+
+                    response = self.llm.invoke(prompt)
+                    return (
+                        response.content
+                        if hasattr(response, "content")
+                        else str(response)
+                    )
+                except Exception:
+                    pass
+
+            # Fallback: return first result summary
+            return f"Based on our records: {results[0].page_content[:200]}..."
+
+        except Exception as e:
+            print(f"⚠️ RAG query failed: {e}")
+            return None
+
+    def _get_scenario_from_alert(self, alert_type: str) -> AlertScenario:
+        """Map alert type string to AlertScenario enum."""
+        mapping = {
+            "brake_fade": AlertScenario.BRAKE_FADE,
+            "brake_failure": AlertScenario.BRAKE_FADE,
+            "battery_critical": AlertScenario.BATTERY_CRITICAL,
+            "battery_degradation": AlertScenario.BATTERY_CRITICAL,
+            "motor_overtemp": AlertScenario.MOTOR_OVERTEMP,
+            "motor_overheat": AlertScenario.MOTOR_OVERTEMP,
+            "coolant_low": AlertScenario.COOLANT_LOW,
+            "coolant_leak": AlertScenario.COOLANT_LOW,
+            "tire_pressure": AlertScenario.TIRE_PRESSURE,
+            "tire_low": AlertScenario.TIRE_PRESSURE,
+            "inverter_fault": AlertScenario.INVERTER_FAULT,
+        }
+        return mapping.get(alert_type.lower(), AlertScenario.GENERAL_WARNING)
+
+    def generate_health_coaching(
+        self, vehicle_id: str, category: str = "battery_optimization"
+    ) -> Dict[str, Any]:
+        """
+        Generate proactive health coaching message.
+
+        Args:
+            vehicle_id: Vehicle identifier
+            category: Coaching category (battery_optimization, driving_efficiency, tire_care)
+
+        Returns:
+            Coaching message and metadata
+        """
+        import random
+        from datetime import datetime
+
+        # Get seasonal context
+        month = datetime.now().month
+        season = (
+            "winter"
+            if month in [12, 1, 2]
+            else "summer" if month in [6, 7, 8] else None
+        )
+
+        # Get coaching tip
+        if category == "seasonal_prep" and season:
+            tip = get_health_coaching_tip("seasonal_prep", season)
+        else:
+            tip = get_health_coaching_tip(category)
+
+        if not tip:
+            tip = "Keep your vehicle well-maintained for optimal performance."
+
+        return {
+            "vehicle_id": vehicle_id,
+            "category": category,
+            "message": tip,
+            "generated_at": datetime.utcnow().isoformat(),
+            "is_proactive": True,
+        }
+
     def initiate_call(
         self,
         vehicle_id: str,
@@ -172,6 +384,7 @@ Available slot: {slot_time}
     ) -> Dict[str, Any]:
         """
         Initiate a voice call for a critical alert.
+        Phase 10: Now includes scenario and persona selection.
 
         Args:
             vehicle_id: Vehicle identifier
@@ -184,21 +397,41 @@ Available slot: {slot_time}
         """
         call_id = f"call-{vehicle_id}-{uuid.uuid4().hex[:8]}"
 
-        # Create call session
+        # Phase 10: Determine scenario and persona
+        scenario = self._get_scenario_from_alert(alert_type)
+        scenario_script = get_scenario_script(scenario)
+        severity = alert_data.get("severity", scenario_script.get("urgency", "medium"))
+        persona = get_persona_for_scenario(scenario, severity)
+
+        # Build context from scenario script and alert data
+        context = {
+            "alert_type": alert_type,
+            "alert_data": alert_data,
+            "owner_name": owner_name,
+            "brake_efficiency": alert_data.get("brake_efficiency", 15),
+            "health": alert_data.get("battery_health", 50),
+            "temperature": alert_data.get("motor_temp", 100),
+            "level": alert_data.get("coolant_level", 30),
+            "pressure": alert_data.get("tire_pressure", 28),
+            "recommended": alert_data.get("recommended_pressure", 35),
+            "tire_position": alert_data.get("tire_position", "front left"),
+            "efficiency": alert_data.get("brake_efficiency", 15),
+            "issue_description": alert_data.get("description", "a potential issue"),
+            "center_name": alert_data.get("center_name", "Downtown EV Hub"),
+            "slot_time": alert_data.get("slot_time", "2:30 PM"),
+            "cost": scenario_script.get("typical_cost", "$150 - $400"),
+            "component": scenario_script.get("component", "general"),
+        }
+
+        # Create call session with Phase 10 enhancements
         call = VoiceCall(
             call_id=call_id,
             vehicle_id=vehicle_id,
             state=CallState.RINGING,
             started_at=datetime.utcnow().isoformat(),
-            context={
-                "alert_type": alert_type,
-                "alert_data": alert_data,
-                "owner_name": owner_name,
-                "brake_efficiency": alert_data.get("brake_efficiency", 15),
-                "center_name": "Downtown EV Hub",
-                "slot_time": "2:30 PM",
-                "cost": "$150 - $400",
-            },
+            context=context,
+            scenario=scenario,
+            persona=persona,
         )
 
         self.active_calls[call_id] = call
@@ -207,6 +440,9 @@ Available slot: {slot_time}
             "success": True,
             "call_id": call_id,
             "state": call.state.value,
+            "scenario": scenario.value,
+            "persona": persona.name,
+            "severity": severity,
             "message": "Call initiated. Waiting for user to answer...",
             "ring_audio_url": "/audio/ring.mp3",
         }
@@ -259,6 +495,7 @@ Available slot: {slot_time}
     ) -> Dict[str, Any]:
         """
         Process user's voice input and generate response.
+        Phase 10: Now includes emotion detection, RAG Q&A, and adaptive responses.
 
         Args:
             call_id: Active call ID
@@ -273,12 +510,16 @@ Available slot: {slot_time}
 
         call = self.active_calls[call_id]
 
+        # Phase 10: Detect and track emotion
+        emotion = self._detect_and_track_emotion(call, user_text)
+
         # Add user input to transcript
         call.transcript.append(
             {
                 "speaker": "user",
                 "text": user_text,
                 "timestamp": datetime.utcnow().isoformat(),
+                "emotion": emotion.value,  # Phase 10: Track emotion
             }
         )
 
@@ -286,8 +527,28 @@ Available slot: {slot_time}
         if not detected_intent:
             detected_intent = self._detect_intent(user_text)
 
-        # Progress conversation based on stage and intent
-        response = self._progress_conversation(call, detected_intent, user_text)
+        # Phase 10: Handle questions with RAG
+        if detected_intent == "question":
+            rag_answer = self._answer_question_with_rag(call, user_text)
+            if rag_answer:
+                # Adapt answer for emotion
+                rag_answer = self._adapt_message_for_emotion(rag_answer, emotion)
+                response = {
+                    "message": rag_answer,
+                    "expected_intents": ["yes", "no", "question", "acknowledge"],
+                    "rag_used": True,
+                }
+            else:
+                # Fall back to conversation progression
+                response = self._progress_conversation(call, detected_intent, user_text)
+        else:
+            # Progress conversation based on stage and intent
+            response = self._progress_conversation(call, detected_intent, user_text)
+
+        # Phase 10: Adapt message for emotion
+        response["message"] = self._adapt_message_for_emotion(
+            response["message"], emotion
+        )
 
         # Add AI response to transcript
         call.transcript.append(
@@ -314,11 +575,31 @@ Available slot: {slot_time}
             "booking": response.get("booking"),
             "expected_intents": response.get("expected_intents", []),
             "call_ended": call.state == CallState.ENDED,
+            "emotion_detected": emotion.value,  # Phase 10: Return emotion
+            "rag_used": response.get("rag_used", False),
         }
 
     def _detect_intent(self, text: str) -> str:
         """Simple intent detection from user text."""
         text_lower = text.lower()
+
+        # Callback/later intents (check BEFORE 'no' to handle frustrated users)
+        if any(
+            phrase in text_lower
+            for phrase in [
+                "call me later",
+                "call back later",
+                "call later",
+                "busy",
+                "not now",
+                "not a good time",
+                "can't talk",
+                "in a hurry",
+                "i'm driving",
+                "later",
+            ]
+        ):
+            return "callback_later"
 
         # Positive intents
         if any(
@@ -336,17 +617,23 @@ Available slot: {slot_time}
         ):
             return "yes"
 
-        # Negative intents
-        if any(
-            word in text_lower
-            for word in ["no", "nope", "don't", "can't", "later", "not now"]
-        ):
+        # Negative intents (refusal of service, not timing)
+        if any(word in text_lower for word in ["no", "nope", "don't want", "cancel"]):
             return "no"
 
         # Questions
         if any(
             word in text_lower
-            for word in ["what", "why", "how", "when", "where", "can i", "could"]
+            for word in [
+                "what",
+                "why",
+                "how",
+                "when",
+                "where",
+                "can i",
+                "could",
+                "is this urgent",
+            ]
         ):
             return "question"
 
@@ -380,6 +667,31 @@ Available slot: {slot_time}
 
         current_stage = call.stage
         context = call.context
+
+        # Handle callback_later intent at ANY stage - user is frustrated/busy
+        if intent == "callback_later":
+            # Acknowledge frustration but emphasize urgency if critical
+            is_critical = (
+                context.get("alert_type") in ["brake_fade", "brake_failure"]
+                or context.get("brake_efficiency", 100) < 30
+            )
+
+            if is_critical:
+                return {
+                    "message": "I completely understand you're busy, and I apologize for the interruption. "
+                    "However, this IS a critical safety issue with your brakes. "
+                    "For your safety, I strongly recommend at least pulling over when possible. "
+                    "Would you like me to send you a text with the details and call back in 30 minutes?",
+                    "expected_intents": ["yes", "no", "text_me"],
+                    "callback_offered": True,
+                }
+            else:
+                return {
+                    "message": "I understand you're busy. This isn't an emergency, so I can call back later. "
+                    "Would you prefer I call back in 30 minutes, or should I send you a text with all the details?",
+                    "expected_intents": ["yes", "no", "text_me"],
+                    "callback_offered": True,
+                }
 
         # Stage transitions based on intent
         if current_stage == ConversationStage.GREETING:

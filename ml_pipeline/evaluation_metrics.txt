@@ -1,0 +1,130 @@
+# Evaluation Metrics and Success Criteria
+# ========================================
+
+## Overview
+This document defines the metrics, thresholds, and success criteria for evaluating 
+the EV telematics ML models.
+
+---
+
+## 1. Failure Prediction Metrics (LightGBM)
+
+### Primary Metrics
+| Metric              | Target    | Description                                      |
+|---------------------|-----------|--------------------------------------------------|
+| AUC-ROC             | >= 0.75   | Area under ROC curve for binary classification  |
+| Precision@100       | >= 0.70   | Precision in top 100 highest-risk windows       |
+| Recall@Precision=0.8| >= 0.50   | Recall when precision is fixed at 80%           |
+| Median Lead Time    | >= 7 days | Median days between first alert and failure     |
+
+### Secondary Metrics
+| Metric              | Target    | Description                                      |
+|---------------------|-----------|--------------------------------------------------|
+| Brier Score         | < 0.15    | Calibration quality of probability estimates    |
+| PR-AUC              | >= 0.60   | Precision-Recall AUC (better for imbalanced)    |
+| F1 Score            | >= 0.65   | Harmonic mean of precision and recall           |
+
+---
+
+## 2. Anomaly Detection Metrics (LSTM-AE)
+
+### Primary Metrics
+| Metric                  | Target     | Description                               |
+|-------------------------|------------|-------------------------------------------|
+| Precision               | >= 0.80    | True positives / (True + False positives) |
+| Recall                  | >= 0.60    | True positives / (True + False negatives) |
+| False Positives/1000h   | < 5        | FP rate normalized to runtime             |
+| Detection Latency       | < 60 sec   | Time from anomaly onset to detection      |
+
+### Threshold Selection
+- Method: Percentile-based on validation set (healthy data only)
+- Default: 99th percentile of reconstruction error
+- Alternative: F1-optimal threshold on validation set with anomaly labels
+
+---
+
+## 3. Severity Classification Metrics
+
+### Per-Class Metrics
+| Severity | Target F1 | Notes                                     |
+|----------|-----------|-------------------------------------------|
+| Low      | >= 0.70   | Acceptable lower recall (non-critical)    |
+| Medium   | >= 0.65   | Balance precision/recall                  |
+| High     | >= 0.70   | Prioritize recall over precision          |
+| Critical | >= 0.80   | High recall required (safety critical)    |
+
+### Overall Metrics
+| Metric           | Target    | Description                               |
+|------------------|-----------|-------------------------------------------|
+| Macro F1         | >= 0.70   | Unweighted average across classes         |
+| Weighted F1      | >= 0.75   | Weighted by class frequency               |
+| Cohen's Kappa    | >= 0.60   | Agreement beyond random chance            |
+
+---
+
+## 4. Real-Time Performance Metrics
+
+| Metric                   | Target     | Description                              |
+|--------------------------|------------|------------------------------------------|
+| Inference Latency (p50)  | < 50 ms    | Median single-window inference time      |
+| Inference Latency (p99)  | < 200 ms   | 99th percentile latency                  |
+| Throughput               | > 100 fps  | Frames per second processing capacity    |
+| Memory Usage             | < 2 GB     | RAM consumption for 10 vehicles          |
+
+---
+
+## 5. MVP Success Criteria
+
+### Must-Have (MVP)
+[x] End-to-end pipeline: ingest -> predict -> alert (< 200ms)
+[x] Failure predictor AUC >= 0.75 on test set
+[x] Anomaly detector precision >= 0.80 on injected faults
+[x] RAG explanation for at least 2 failure scenarios
+[x] Demo with 3 test cases: bearing failure, thermal event, no-fault baseline
+
+### Nice-to-Have
+[ ] AUC >= 0.85 on failure prediction
+[ ] Per-vehicle personalization improves AUC by >= 0.02
+[ ] Real-time dashboard with live alerts
+[ ] Drift detection with automatic retrain trigger
+
+---
+
+## 6. Test Scenarios
+
+### Test Case 1: Motor Bearing Failure
+- Inject: Vibration increase + motor temp spikes over 48h
+- Expected: Anomaly detected within 1h of onset, failure predicted 24h+ before event
+- Success: Lead time >= 24h, anomaly precision >= 0.8
+
+### Test Case 2: Thermal Runaway Risk
+- Inject: Rapid battery temp increase + cell voltage divergence over 6h
+- Expected: Critical anomaly detected within 15 min, immediate alert
+- Success: Detection latency < 15 min, severity = critical
+
+### Test Case 3: No-Fault Baseline
+- Run: 7 days of healthy driving data
+- Expected: Minimal false alarms
+- Success: FP rate < 5 per 1000 hours
+
+---
+
+## 7. Evaluation Process
+
+1. Train/Val/Test Split
+   - 6 vehicles train, 2 vehicles val, 2 vehicles test
+   - No data leakage between splits
+
+2. Model Selection
+   - Train on train set
+   - Select hyperparameters and thresholds on validation set
+   - Report final metrics on held-out test set only
+
+3. Cross-Validation (Optional)
+   - Leave-one-vehicle-out for robustness estimation
+   - Report mean +/- std of metrics across folds
+
+4. Ablation Study
+   - Feature importance via SHAP (LightGBM)
+   - Compare models with/without derived features
+   - Compare different window sizes

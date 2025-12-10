@@ -1,0 +1,11 @@
+{
+  "failure_predictor": {
+    "default_threshold": 0.5,
+    "high_precision_threshold": 0.8081538180935474,
+    "f1_optimal_threshold": 0.8081538180935474
+  },
+  "anomaly_detector": {
+    "threshold": 0.95
+  },
+  "alert_cooldown_minutes": 30
+}

@@ -1,0 +1,305 @@
+{
+    "schema_version": "1.0.0",
+    "description": "EV Telemetry Schema for Vehicle Health Monitoring and Failure Prediction",
+    "sampling": {
+        "frame_rate_sec": 1,
+        "aggregate_window_sec": 60
+    },
+    "frame_fields": {
+        "vehicle_id": {
+            "type": "string",
+            "description": "Unique vehicle identifier",
+            "example": "EV_001"
+        },
+        "timestamp": {
+            "type": "integer",
+            "description": "Unix epoch timestamp in seconds",
+            "example": 1702137600
+        },
+        "speed_kph": {
+            "type": "float",
+            "description": "Vehicle speed in km/h",
+            "range": [
+                0,
+                200
+            ],
+            "unit": "km/h"
+        },
+        "motor_rpm": {
+            "type": "float",
+            "description": "Electric motor revolutions per minute",
+            "range": [
+                0,
+                15000
+            ],
+            "unit": "rpm"
+        },
+        "motor_temp_c": {
+            "type": "float",
+            "description": "Electric motor temperature",
+            "range": [
+                -20,
+                150
+            ],
+            "unit": "celsius"
+        },
+        "inverter_temp_c": {
+            "type": "float",
+            "description": "Power inverter temperature",
+            "range": [
+                -20,
+                120
+            ],
+            "unit": "celsius"
+        },
+        "battery_soc_pct": {
+            "type": "float",
+            "description": "Battery State of Charge percentage",
+            "range": [
+                0,
+                100
+            ],
+            "unit": "percent"
+        },
+        "battery_voltage_v": {
+            "type": "float",
+            "description": "Battery pack total voltage",
+            "range": [
+                200,
+                450
+            ],
+            "unit": "volts"
+        },
+        "battery_current_a": {
+            "type": "float",
+            "description": "Battery current (positive=discharge, negative=charge)",
+            "range": [
+                -500,
+                500
+            ],
+            "unit": "amperes"
+        },
+        "battery_temp_c": {
+            "type": "float",
+            "description": "Battery pack average temperature",
+            "range": [
+                -30,
+                60
+            ],
+            "unit": "celsius"
+        },
+        "battery_cell_delta_v": {
+            "type": "float",
+            "description": "Max voltage difference between cells (health indicator)",
+            "range": [
+                0,
+                0.5
+            ],
+            "unit": "volts"
+        },
+        "hvac_power_kw": {
+            "type": "float",
+            "description": "HVAC system power consumption",
+            "range": [
+                0,
+                8
+            ],
+            "unit": "kilowatts"
+        },
+        "throttle_pct": {
+            "type": "integer",
+            "description": "Accelerator pedal position",
+            "range": [
+                0,
+                100
+            ],
+            "unit": "percent"
+        },
+        "brake_pct": {
+            "type": "integer",
+            "description": "Brake pedal position",
+            "range": [
+                0,
+                100
+            ],
+            "unit": "percent"
+        },
+        "regen_pct": {
+            "type": "integer",
+            "description": "Regenerative braking intensity",
+            "range": [
+                0,
+                100
+            ],
+            "unit": "percent"
+        },
+        "accel_x": {
+            "type": "float",
+            "description": "Longitudinal acceleration (forward/back)",
+            "range": [
+                -3,
+                3
+            ],
+            "unit": "g"
+        },
+        "accel_y": {
+            "type": "float",
+            "description": "Lateral acceleration (left/right)",
+            "range": [
+                -2,
+                2
+            ],
+            "unit": "g"
+        },
+        "accel_z": {
+            "type": "float",
+            "description": "Vertical acceleration (up/down)",
+            "range": [
+                -2,
+                2
+            ],
+            "unit": "g"
+        },
+        "gps_lat": {
+            "type": "float",
+            "description": "GPS latitude",
+            "range": [
+                -90,
+                90
+            ],
+            "unit": "degrees"
+        },
+        "gps_lon": {
+            "type": "float",
+            "description": "GPS longitude",
+            "range": [
+                -180,
+                180
+            ],
+            "unit": "degrees"
+        },
+        "odometer_km": {
+            "type": "float",
+            "description": "Total distance traveled",
+            "range": [
+                0,
+                500000
+            ],
+            "unit": "kilometers"
+        },
+        "charging_state": {
+            "type": "string",
+            "description": "Current charging status",
+            "enum": [
+                "idle",
+                "charging_ac",
+                "charging_dc",
+                "discharging"
+            ],
+            "example": "discharging"
+        },
+        "ambient_temp_c": {
+            "type": "float",
+            "description": "External ambient temperature",
+            "range": [
+                -40,
+                50
+            ],
+            "unit": "celsius"
+        },
+        "tire_pressure_fl_psi": {
+            "type": "float",
+            "description": "Front left tire pressure",
+            "range": [
+                20,
+                50
+            ],
+            "unit": "psi"
+        },
+        "tire_pressure_fr_psi": {
+            "type": "float",
+            "description": "Front right tire pressure",
+            "range": [
+                20,
+                50
+            ],
+            "unit": "psi"
+        },
+        "tire_pressure_rl_psi": {
+            "type": "float",
+            "description": "Rear left tire pressure",
+            "range": [
+                20,
+                50
+            ],
+            "unit": "psi"
+        },
+        "tire_pressure_rr_psi": {
+            "type": "float",
+            "description": "Rear right tire pressure",
+            "range": [
+                20,
+                50
+            ],
+            "unit": "psi"
+        },
+        "dtc_codes": {
+            "type": "array",
+            "items": "string",
+            "description": "Active diagnostic trouble codes",
+            "example": [
+                "P0A80",
+                "P0AFA"
+            ]
+        }
+    },
+    "derived_features": {
+        "power_kw": "battery_voltage_v * battery_current_a / 1000",
+        "efficiency_wh_km": "power_kw * 1000 / speed_kph (when speed > 0)",
+        "motor_load_factor": "motor_rpm / max_rpm_for_speed",
+        "thermal_gradient": "motor_temp_c - ambient_temp_c",
+        "soc_delta_rate": "change in battery_soc_pct per minute"
+    },
+    "ev_specific_dtc_codes": {
+        "P0A80": {
+            "description": "Replace Hybrid Battery Pack",
+            "severity": "critical"
+        },
+        "P0AFA": {
+            "description": "Hybrid Battery Current Sensor Circuit",
+            "severity": "high"
+        },
+        "P0A7F": {
+            "description": "Hybrid Battery Degradation",
+            "severity": "high"
+        },
+        "P0A1F": {
+            "description": "Battery Energy Control Module",
+            "severity": "medium"
+        },
+        "P0A09": {
+            "description": "DC/DC Converter Status Circuit",
+            "severity": "medium"
+        },
+        "P0A3F": {
+            "description": "Drive Motor 'A' Temperature Sensor",
+            "severity": "low"
+        },
+        "P0A78": {
+            "description": "Drive Motor 'A' Inverter Overtemperature",
+            "severity": "critical"
+        },
+        "P0A0D": {
+            "description": "High Voltage System Interlock Circuit",
+            "severity": "critical"
+        },
+        "P0560": {
+            "description": "System Voltage Malfunction",
+            "severity": "medium"
+        },
+        "P0AA6": {
+            "description": "Hybrid Battery Voltage System Isolation Fault",
+            "severity": "critical"
+        }
+    }
+}

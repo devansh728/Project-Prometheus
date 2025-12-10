@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Loader2 } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Volume2, VolumeX, Loader2, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -61,6 +61,7 @@ export function VoiceCallModal({
     const [currentAiMessage, setCurrentAiMessage] = useState<string>('');
     const [booking, setBooking] = useState<any>(null);
     const [textInput, setTextInput] = useState<string>('');  // Fallback text input
+    const [detectedEmotion, setDetectedEmotion] = useState<string>('neutral');  // Scene 2: Emotion tracking
 
     // Web Speech API refs
     const recognitionRef = useRef<any>(null);
@@ -249,6 +250,17 @@ export function VoiceCallModal({
                 if (data.booking) {
                     setBooking(data.booking);
                     onBookingConfirmed?.(data.booking);
+                }
+
+                // Handle emotion detection (Scene 2 demo)
+                if (data.detected_emotion) {
+                    setDetectedEmotion(data.detected_emotion);
+                } else if (text.toLowerCase().includes('scary') || text.toLowerCase().includes('worried') || text.toLowerCase().includes('afraid')) {
+                    setDetectedEmotion('anxious');
+                } else if (text.toLowerCase().includes('frustrated') || text.toLowerCase().includes('angry')) {
+                    setDetectedEmotion('frustrated');
+                } else if (text.toLowerCase().includes('thanks') || text.toLowerCase().includes('great')) {
+                    setDetectedEmotion('happy');
                 }
 
                 // Speak the response
@@ -443,6 +455,24 @@ export function VoiceCallModal({
                         {callState === 'connected' && (
                             <div className="w-full mt-4 px-4">
                                 <Progress value={getProgress()} className="h-1" />
+                            </div>
+                        )}
+
+                        {/* Emotion Badge - Scene 2 Demo */}
+                        {callState === 'connected' && detectedEmotion !== 'neutral' && (
+                            <div className="mt-3 flex items-center gap-2">
+                                <Badge
+                                    variant={detectedEmotion === 'anxious' ? 'destructive' :
+                                        detectedEmotion === 'frustrated' ? 'destructive' :
+                                            'default'}
+                                    className="animate-pulse"
+                                >
+                                    <Heart className="h-3 w-3 mr-1" />
+                                    {detectedEmotion === 'anxious' && '😟 Feeling Anxious'}
+                                    {detectedEmotion === 'frustrated' && '😤 Frustrated'}
+                                    {detectedEmotion === 'happy' && '😊 Happy'}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Emotion adapted</span>
                             </div>
                         )}
                     </div>

@@ -1,0 +1,44 @@
+{
+  "failure_predictor": {
+    "auc_roc": 0.9709425247149492,
+    "average_precision": 0.9988248841260595,
+    "precision_at_k": {
+      "precision@50": 0.96,
+      "precision@100": 0.98,
+      "precision@200": 0.99,
+      "precision@500": 0.996
+    },
+    "threshold_for_80_precision": {
+      "threshold": 0.8081538180935474,
+      "precision": 0.9800019849146486,
+      "recall": 1.0
+    },
+    "threshold_f1_optimal": {
+      "threshold": 0.8081538180935474,
+      "precision": 0.9800019849146486,
+      "recall": 1.0
+    },
+    "lead_time": {
+      "median_lead_time_days": 6.879417175820052,
+      "mean_lead_time_days": 6.9389394425435
+    }
+  },
+  "severity_classifier": {
+    "per_class_f1": {
+      "medium": 0.0,
+      "high": 0.6461387200572042,
+      "critical": 0.02065997130559541
+    }
+  },
+  "thresholds": {
+    "failure_predictor": {
+      "default_threshold": 0.5,
+      "high_precision_threshold": 0.8081538180935474,
+      "f1_optimal_threshold": 0.8081538180935474
+    },
+    "anomaly_detector": {
+      "threshold": 0.95
+    },
+    "alert_cooldown_minutes": 30
+  }
+}

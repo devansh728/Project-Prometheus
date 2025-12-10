@@ -21,6 +21,19 @@ try:
 except ImportError:
     LLM_AVAILABLE = False
 
+# Phase 12: CAPA utilities
+from agents.capa_utils import (
+    SupplierRiskScore,
+    RecurrenceAnalysis,
+    ModelYearDrift,
+    calculate_supplier_risk,
+    get_supplier_for_component,
+    analyze_model_year_drift,
+    detect_recurrence,
+    SUPPLIER_DATABASE,
+    MODEL_YEAR_DATA,
+)
+
 
 @dataclass
 class CAPAReport:
@@ -61,6 +74,7 @@ class CAPAAgent:
         self.capa_records: List[Dict] = []
         self.llm = None
         self.rca_chain = None
+        self.engineering_chain = None  # Phase 12: LLM for recommendations
 
         self._load_capa_records()
         self._initialize_llm()
@@ -539,6 +553,349 @@ Generate RCA report:""",
                             }
                         )
         return actions[:10]
+
+    # ==================== Phase 12: Advanced Manufacturing Methods ====================
+    
+    def analyze_recurrence(
+        self,
+        component: str,
+        vehicle_id: str = None,
+    ) -> Dict[str, Any]:
+        """
+        Analyze failure recurrence for a component.
+        
+        Args:
+            component: Component to analyze
+            vehicle_id: Optional vehicle filter
+            
+        Returns:
+            Recurrence analysis results
+        """
+        analysis = detect_recurrence(self.capa_records, component, vehicle_id)
+        
+        return {
+            "success": True,
+            "component": component,
+            "vehicle_id": vehicle_id,
+            "occurrence_count": analysis.occurrence_count,
+            "is_chronic": analysis.is_chronic,
+            "first_occurrence": analysis.first_occurrence,
+            "last_occurrence": analysis.last_occurrence,
+            "days_between_avg": analysis.days_between_avg,
+            "pattern_detected": analysis.pattern_detected,
+            "recommendation": analysis.recommendation,
+            "related_capa_ids": analysis.related_capa_ids,
+            "alert": analysis.is_chronic,
+        }
+    
+    def get_supplier_risk(
+        self,
+        supplier_id: str = None,
+        component: str = None,
+    ) -> Dict[str, Any]:
+        """
+        Get supplier risk assessment.
+        
+        Args:
+            supplier_id: Direct supplier ID
+            component: Component to find supplier for
+            
+        Returns:
+            Supplier risk score details
+        """
+        # Find supplier by component if not provided
+        if not supplier_id and component:
+            supplier_id = get_supplier_for_component(component)
+        
+        if not supplier_id:
+            return {"success": False, "error": "Supplier not found"}
+        
+        risk = calculate_supplier_risk(supplier_id)
+        
+        return {
+            "success": True,
+            "supplier_id": risk.supplier_id,
+            "supplier_name": risk.supplier_name,
+            "risk_score": risk.risk_score,
+            "risk_level": risk.risk_level.value,
+            "defect_rate_ppm": risk.defect_rate_ppm,
+            "response_time_hours": risk.response_time_hours,
+            "quality_trend": risk.quality_trend.value,
+            "components_supplied": risk.components_supplied,
+            "total_parts_supplied": risk.total_parts_supplied,
+            "defects_reported": risk.defects_reported,
+            "last_audit_date": risk.last_audit_date,
+            "certifications": risk.certifications,
+            "alert": risk.risk_level.value in ["high", "critical"],
+        }
+    
+    def get_all_supplier_risks(self) -> Dict[str, Any]:
+        """Get risk scores for all suppliers."""
+        suppliers = []
+        
+        for supplier_id in SUPPLIER_DATABASE.keys():
+            risk = calculate_supplier_risk(supplier_id)
+            suppliers.append({
+                "supplier_id": risk.supplier_id,
+                "supplier_name": risk.supplier_name,
+                "risk_score": risk.risk_score,
+                "risk_level": risk.risk_level.value,
+                "quality_trend": risk.quality_trend.value,
+            })
+        
+        # Sort by risk score descending
+        suppliers.sort(key=lambda x: x["risk_score"], reverse=True)
+        
+        return {
+            "success": True,
+            "total_suppliers": len(suppliers),
+            "high_risk_count": len([s for s in suppliers if s["risk_level"] in ["high", "critical"]]),
+            "suppliers": suppliers,
+        }
+    
+    def track_model_year_drift(
+        self,
+        component: str,
+        target_year: int = None,
+    ) -> Dict[str, Any]:
+        """
+        Track quality drift across model years.
+        
+        Args:
+            component: Component to analyze
+            target_year: Optional specific year
+            
+        Returns:
+            Model year drift analysis
+        """
+        drift_data = analyze_model_year_drift(component, target_year)
+        
+        # Find years with alerts
+        alert_years = [d for d in drift_data if d.alert]
+        
+        # Summary
+        if alert_years:
+            summary = f"Elevated failure rates detected in model years: {', '.join(str(d.model_year) for d in alert_years)}"
+        else:
+            summary = f"Quality metrics within normal range for {component}"
+        
+        return {
+            "success": True,
+            "component": component,
+            "summary": summary,
+            "alert_count": len(alert_years),
+            "model_years": [
+                {
+                    "year": d.model_year,
+                    "failure_rate_ppm": d.failure_rate_ppm,
+                    "sample_size": d.sample_size,
+                    "comparison_to_avg": d.comparison_to_avg,
+                    "trend": d.trend,
+                    "alert": d.alert,
+                    "contributing_factors": d.contributing_factors,
+                }
+                for d in drift_data
+            ],
+        }
+    
+    def generate_engineering_recommendations(
+        self,
+        component: str,
+        include_patterns: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Generate LLM-powered engineering recommendations.
+        
+        Args:
+            component: Component to analyze
+            include_patterns: Include pattern analysis data
+            
+        Returns:
+            Engineering recommendations
+        """
+        # Gather data
+        pattern_data = self.find_pattern_analysis(component) if include_patterns else {}
+        supplier_data = self.get_supplier_risk(component=component)
+        drift_data = self.track_model_year_drift(component)
+        recurrence = self.analyze_recurrence(component)
+        
+        # Try LLM generation
+        recommendations = None
+        if self.llm:
+            try:
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", """You are an automotive quality engineer. Generate actionable engineering recommendations based on the failure data provided.
+                    
+Focus on:
+1. Design changes to prevent recurrence
+2. Manufacturing process improvements
+3. Supplier quality requirements
+4. Testing enhancements
+
+Format as JSON:
+{{
+    "design_recommendations": [{{\"priority\": \"high/medium/low\", \"action\": \"...\", \"rationale\": \"...\"}}],
+    "process_recommendations": [{{\"priority\": \"high/medium/low\", \"action\": \"...\", \"area\": \"...\"}}],
+    "supplier_requirements": [{{\"requirement\": \"...\", \"supplier\": \"...\"}}],
+    "testing_enhancements": [{{\"test_type\": \"...\", \"coverage\": \"...\"}}],
+    "summary\": \"...\"
+}}"""),
+                    ("human", """Component: {component}
+Pattern Analysis: {pattern_data}
+Supplier Risk: {supplier_risk}
+Model Year Drift: {drift_data}
+Recurrence: {recurrence}
+
+Generate engineering recommendations:""")
+                ])
+                
+                chain = prompt | self.llm | StrOutputParser()
+                response = chain.invoke({
+                    "component": component,
+                    "pattern_data": json.dumps(pattern_data.get("pattern_summary", "")),
+                    "supplier_risk": f"Score: {supplier_data.get('risk_score', 'N/A')}, Trend: {supplier_data.get('quality_trend', 'N/A')}",
+                    "drift_data": drift_data.get("summary", ""),
+                    "recurrence": recurrence.get("pattern_detected", ""),
+                })
+                
+                recommendations = json.loads(response)
+            except Exception as e:
+                print(f"LLM recommendation failed: {e}")
+        
+        # Fallback recommendations
+        if not recommendations:
+            recommendations = self._fallback_engineering_recommendations(
+                component, pattern_data, supplier_data, drift_data, recurrence
+            )
+        
+        return {
+            "success": True,
+            "component": component,
+            "generated_at": datetime.now().isoformat(),
+            "recommendations": recommendations,
+            "data_sources": {
+                "pattern_records": pattern_data.get("matching_records", 0),
+                "supplier_risk_level": supplier_data.get("risk_level", "unknown"),
+                "drift_alerts": drift_data.get("alert_count", 0),
+                "recurrence_chronic": recurrence.get("is_chronic", False),
+            },
+        }
+    
+    def _fallback_engineering_recommendations(
+        self,
+        component: str,
+        pattern_data: Dict,
+        supplier_data: Dict,
+        drift_data: Dict,
+        recurrence: Dict,
+    ) -> Dict[str, Any]:
+        """Generate fallback recommendations without LLM."""
+        design_recs = [
+            {
+                "priority": "high" if recurrence.get("is_chronic") else "medium",
+                "action": f"Review {component} thermal margin and material specifications",
+                "rationale": f"Based on {recurrence.get('occurrence_count', 0)} failure occurrences",
+            }
+        ]
+        
+        process_recs = [
+            {
+                "priority": "medium",
+                "action": f"Enhance incoming inspection for {component} parts",
+                "area": "Quality Control",
+            }
+        ]
+        
+        supplier_reqs = []
+        if supplier_data.get("risk_level") in ["high", "critical"]:
+            supplier_reqs.append({
+                "requirement": "Increase audit frequency to monthly",
+                "supplier": supplier_data.get("supplier_name", "Unknown"),
+            })
+        
+        testing_enhancements = [
+            {
+                "test_type": f"{component.title()} durability test",
+                "coverage": "10,000 cycle accelerated aging",
+            }
+        ]
+        
+        summary = f"Engineering review recommended for {component}. "
+        if drift_data.get("alert_count", 0) > 0:
+            summary += "Model year drift detected. "
+        if supplier_data.get("alert"):
+            summary += "Supplier risk elevated. "
+        
+        return {
+            "design_recommendations": design_recs,
+            "process_recommendations": process_recs,
+            "supplier_requirements": supplier_reqs,
+            "testing_enhancements": testing_enhancements,
+            "summary": summary,
+        }
+    
+    def get_insights_api_data(self) -> Dict[str, Any]:
+        """
+        Get comprehensive manufacturing insights for API/dashboard.
+        
+        Returns:
+            Dashboard-ready insights data
+        """
+        # Get base summary
+        summary = self.get_manufacturing_summary()
+        
+        # Get all supplier risks
+        supplier_risks = self.get_all_supplier_risks()
+        
+        # Weekly trend (simulated)
+        weekly_trend = [
+            {"week": "W48", "new_capas": 3, "closed_capas": 2},
+            {"week": "W49", "new_capas": 5, "closed_capas": 4},
+            {"week": "W50", "new_capas": 2, "closed_capas": 3},
+        ]
+        
+        # Top issues by component
+        top_issues = []
+        for comp, count in sorted(
+            summary["component_distribution"].items(),
+            key=lambda x: x[1],
+            reverse=True
+        )[:5]:
+            recurrence = self.analyze_recurrence(comp)
+            top_issues.append({
+                "component": comp,
+                "capa_count": count,
+                "is_chronic": recurrence.get("is_chronic", False),
+            })
+        
+        # Pending recalls (simulated)
+        pending_recalls = [
+            {
+                "component": "brakes",
+                "affected_vehicles": 50,
+                "batch": "#99",
+                "status": "under_review",
+            }
+        ]
+        
+        return {
+            "success": True,
+            "generated_at": datetime.now().isoformat(),
+            "summary": {
+                "total_capas": summary["total_capas"],
+                "open_capas": summary["open_capas"],
+                "closed_capas": summary["closed_capas"],
+            },
+            "weekly_trend": weekly_trend,
+            "top_issues": top_issues,
+            "supplier_alerts": [
+                s for s in supplier_risks["suppliers"]
+                if s["risk_level"] in ["high", "critical"]
+            ],
+            "pending_recalls": pending_recalls,
+            "high_priority_actions": summary["high_priority_actions"][:5],
+            "root_cause_distribution": summary["root_cause_distribution"],
+        }
 
 
 # Singleton instance

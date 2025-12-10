@@ -20,6 +20,8 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { CriticalAlertModal } from '@/components/ui/CriticalAlertModal';
 import { VoiceCallModal } from '@/components/ui/VoiceCallModal';
+import { AgentConsoleLog } from '@/components/ui/AgentConsoleLog';
+import { FailurePredictionCard } from '@/components/ui/FailurePredictionCard';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTelemetryStore } from '@/stores/telemetryStore';
 import { useVehicleStore } from '@/stores/vehicleStore';
@@ -447,6 +449,16 @@ export default function VehicleMonitorPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Agent Console Log - Demo */}
+                            <AgentConsoleLog
+                                anomalyScore={(anomaly?.failure_risk_pct || 0) / 100}
+                                failureProbability={anomaly?.failure_risk_pct || 0}
+                                isAnomaly={anomaly?.is_anomaly || false}
+                                severity={anomaly?.severity || 'low'}
+                                anomalyType={anomaly?.type || 'normal'}
+                                brakeTemp={telemetry?.brake_temp_c || 0}
+                            />
                         </div>
 
                         {/* Right Column - Scores & Anomalies */}
@@ -488,38 +500,16 @@ export default function VehicleMonitorPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* Anomaly Status */}
-                            <Card className={cn(
-                                'border-2 transition-colors',
-                                anomaly?.is_anomaly ? getSeverityColor(anomaly.severity) : 'border-transparent'
-                            )}>
-                                <CardHeader>
-                                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        Anomaly Status
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    {anomaly?.is_anomaly ? (
-                                        <div>
-                                            <Badge className={getSeverityColor(anomaly.severity)}>
-                                                {anomaly.severity.toUpperCase()}
-                                            </Badge>
-                                            <p className="text-sm mt-2">{anomaly.type.replace('_', ' ')}</p>
-                                            <div className="mt-2">
-                                                <p className="text-xs text-muted-foreground">Failure Risk</p>
-                                                <Progress value={anomaly.failure_risk_pct} className="h-2 mt-1" />
-                                                <p className="text-xs text-right">{anomaly.failure_risk_pct.toFixed(1)}%</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-4">
-                                            <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
-                                            <p className="text-sm text-muted-foreground mt-2">All systems normal</p>
-                                        </div>
-                                    )}
-                                </CardContent>
-                            </Card>
+                            {/* Failure Prediction Card - Enhanced for Demo */}
+                            <FailurePredictionCard
+                                failureProbability={anomaly?.failure_risk_pct || 0}
+                                anomalyScore={(anomaly?.failure_risk_pct || 0) / 100}
+                                severity={anomaly?.severity || 'low'}
+                                component={anomaly?.type?.includes('brake') ? 'Brakes' :
+                                    anomaly?.type?.includes('battery') ? 'Battery' :
+                                        anomaly?.type?.includes('motor') ? 'Motor' : 'System'}
+                                daysToFailure={3}
+                            />
 
                             {/* Notifications */}
                             <Card>
