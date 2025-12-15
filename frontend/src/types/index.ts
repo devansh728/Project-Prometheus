@@ -16,30 +16,57 @@ export interface TelemetryData {
     timestamp: string;
     vehicle_id: string;
     driver_profile: string;
+    // Motion data
     speed_kmh: number;
+    speed_kph: number;  // Alias for ML compatibility
     acceleration_ms2: number;
     jerk_ms3: number;
+    // Motor data
+    motor_rpm: number;
+    motor_temp_c: number;
+    inverter_temp_c: number;
+    // Power data
     power_draw_kw: number;
+    power_kw: number;  // Alias for ML
     net_power_kw: number;
     regen_power_kw: number;
     regen_efficiency: number;
+    regen_pct: number;  // Percentage for ML
+    // Battery data
     battery_soc_pct: number;
     battery_temp_c: number;
+    battery_voltage_v: number;
+    battery_current_a: number;
     cell_voltage_avg_v: number;
     cell_voltage_diff_v: number;
-    motor_temp_c: number;
-    inverter_temp_c: number;
+    battery_cell_delta_v: number;  // Alias for ML
+    // Thermal data
     brake_temp_c: number;
     coolant_temp_c: number;
     ambient_temp_c: number;
+    // HVAC
+    hvac_power_kw: number;
+    // Control inputs
+    throttle_pct: number;
+    brake_pct: number;
+    // IMU/Accelerometer
+    accel_x: number;
+    accel_y: number;
+    accel_z: number;
+    // Wear data
     wear_index: number;
     odometer_km: number;
+    // Fault indicators
     active_faults: string[];
     fault_count: number;
+    // Anomaly labels (from backend)
+    is_anomaly?: boolean;
+    anomaly_type?: string;
 }
 
 export interface AnomalyData {
     is_anomaly: boolean;
+    score: number;  // Anomaly score from ML models
     type: string;
     severity: 'low' | 'medium' | 'high' | 'critical';
     failure_risk_pct: number;

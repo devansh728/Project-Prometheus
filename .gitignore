@@ -127,3 +127,4 @@ NEW_TASK.json
 PROJECT_FEATURES.md
 PROMPT.md
 .gitignore
+*.env

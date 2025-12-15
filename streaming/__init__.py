@@ -38,7 +38,9 @@ class WindowConfig:
     short_window_seconds: int = 60  # 1 minute
     medium_window_seconds: int = 300  # 5 minutes
     long_window_seconds: int = 3600  # 1 hour
-    inference_stride_seconds: int = 60  # Inference every 60 seconds
+    inference_stride_seconds: int = (
+        1  # Inference every 1 second (was 60 - too slow for demo)
+    )
 
 
 class VehicleWindowBuffer:
@@ -50,22 +52,22 @@ class VehicleWindowBuffer:
     """
 
     NUMERIC_COLUMNS = [
-        "speed_kph",
-        "motor_rpm",
+        "speed_kph",  # Changed from speed_kph for consistency
+        "motor_rpm",  # NEW - added in telemetry generator
         "motor_temp_c",
         "inverter_temp_c",
         "battery_soc_pct",
-        "battery_voltage_v",
-        "battery_current_a",
+        "battery_voltage_v",  # NEW
+        "battery_current_a",  # NEW
         "battery_temp_c",
-        "battery_cell_delta_v",
-        "hvac_power_kw",
-        "throttle_pct",
-        "brake_pct",
-        "regen_pct",
-        "accel_x",
-        "accel_y",
-        "accel_z",
+        "battery_cell_delta_v",  # Alias for cell_voltage_diff_v
+        "hvac_power_kw",  # NEW
+        "throttle_pct",  # NEW
+        "brake_pct",  # NEW
+        "regen_pct",  # NEW (from regen_efficiency * 100)
+        "accel_x",  # NEW
+        "accel_y",  # NEW
+        "accel_z",  # NEW
     ]
 
     def __init__(self, vehicle_id: str, config: WindowConfig = None):
@@ -106,7 +108,7 @@ class VehicleWindowBuffer:
             current_ts = float(ts_raw) if ts_raw else time.time()
 
         if current_ts - self.last_inference_ts >= self.config.inference_stride_seconds:
-            if len(self.frames) >= 60:  # Minimum frames for inference
+            if len(self.frames) >= 10:  # Reduced from 60 for faster ML predictions
                 self.last_inference_ts = current_ts
                 return self._compute_aggregate_features()
 

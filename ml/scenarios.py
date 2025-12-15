@@ -99,17 +99,18 @@ class ScenarioManager:
                 },
                 phase=ScenarioPhase.BUILDING,
             ),
-            # Phase 3: System detects pattern (15s) - WARNING TRIGGERS HERE
+            # Phase 3: System should detect from behavior (15s)
             ScenarioEvent(
                 time_offset_seconds=15,
                 event_type="prediction",
-                description="ML model detects aggressive pattern",
+                description="ML model should detect aggressive pattern",
                 telemetry_modifiers={
-                    "brake_temp_c": lambda: random.uniform(200, 280),
+                    # NO temp overrides - let physics/fault injection drive temps
+                    "speed_kmh": lambda: random.uniform(90, 140),
                     "wear_index": lambda: random.uniform(0.4, 0.6),
                 },
                 phase=ScenarioPhase.WARNING,
-                triggers_prediction=True,
+                triggers_prediction=False,  # DISABLED: Now ML-driven only
                 prediction_message="Based on your driving pattern, brake pads may wear excessively within 7 days. Harsh braking detected 15 times in the last 3 minutes.",
                 days_to_failure=7,
             ),
@@ -119,7 +120,8 @@ class ScenarioManager:
                 event_type="escalation",
                 description="Aggressive driving continues",
                 telemetry_modifiers={
-                    "brake_temp_c": lambda: random.uniform(300, 380),
+                    # NO temp overrides - only behavioral changes
+                    "speed_kmh": lambda: random.uniform(100, 150),
                     "wear_index": lambda: random.uniform(0.6, 0.8),
                     "jerk_ms3": lambda: random.uniform(5.0, 8.0)
                     * random.choice([1, -1]),
@@ -161,9 +163,8 @@ class ScenarioManager:
                 event_type="temperature_rise",
                 description="Battery temperature rising under load",
                 telemetry_modifiers={
-                    "battery_temp_c": lambda: 38 + random.uniform(0, 5),
+                    # NO temp overrides - let physics/fault injection drive temps
                     "power_draw_kw": lambda: random.uniform(60, 85),
-                    "motor_temp_c": lambda: random.uniform(75, 90),
                 },
                 phase=ScenarioPhase.BUILDING,
             ),
@@ -172,11 +173,11 @@ class ScenarioManager:
                 event_type="thermal_warning",
                 description="Battery approaching thermal limits",
                 telemetry_modifiers={
-                    "battery_temp_c": lambda: random.uniform(48, 54),
-                    "coolant_temp_c": lambda: random.uniform(55, 65),
+                    # NO temp overrides - only behavioral changes
+                    "power_draw_kw": lambda: random.uniform(40, 60),
                 },
                 phase=ScenarioPhase.WARNING,
-                triggers_prediction=True,
+                triggers_prediction=False,  # DISABLED: Now ML-driven only
                 prediction_message="Battery temperature is elevated. Continued high-power driving in this heat may cause thermal degradation within 8 days.",
                 days_to_failure=8,
             ),
@@ -185,7 +186,7 @@ class ScenarioManager:
                 event_type="critical_temp",
                 description="Battery temperature critical",
                 telemetry_modifiers={
-                    "battery_temp_c": lambda: random.uniform(55, 62),
+                    # NO temp overrides
                     "power_draw_kw": lambda: random.uniform(30, 50),
                 },
                 phase=ScenarioPhase.CRITICAL,
@@ -227,7 +228,7 @@ class ScenarioManager:
                 description="Regen limited due to high SOC",
                 telemetry_modifiers={
                     "regen_efficiency": lambda: random.uniform(0.3, 0.5),
-                    "brake_temp_c": lambda: 80 + random.uniform(20, 50),
+                    # NO brake_temp override - let physics/fault drive temps
                 },
                 phase=ScenarioPhase.BUILDING,
             ),
@@ -236,11 +237,11 @@ class ScenarioManager:
                 event_type="brake_heating",
                 description="Friction brakes taking heavy load",
                 telemetry_modifiers={
-                    "brake_temp_c": lambda: random.uniform(250, 320),
+                    # NO temp overrides - only behavioral changes
                     "regen_efficiency": lambda: random.uniform(0.2, 0.4),
                 },
                 phase=ScenarioPhase.WARNING,
-                triggers_prediction=True,
+                triggers_prediction=False,  # DISABLED: Now ML-driven only
                 prediction_message="CRITICAL: Brake temperature elevated due to sustained downhill braking. Brake fade may occur. Service required.",
                 days_to_failure=3,
             ),
@@ -249,7 +250,7 @@ class ScenarioManager:
                 event_type="brake_critical",
                 description="Brake fade imminent",
                 telemetry_modifiers={
-                    "brake_temp_c": lambda: random.uniform(380, 450),
+                    # NO temp overrides
                 },
                 phase=ScenarioPhase.CRITICAL,
             ),
@@ -289,8 +290,7 @@ class ScenarioManager:
                 description="Sustained high-speed driving",
                 telemetry_modifiers={
                     "speed_kmh": lambda: random.uniform(140, 160),
-                    "motor_temp_c": lambda: 55 + random.uniform(15, 30),
-                    "inverter_temp_c": lambda: 50 + random.uniform(10, 25),
+                    # NO temp overrides - let physics/fault drive temps
                     "power_draw_kw": lambda: random.uniform(80, 120),
                 },
                 phase=ScenarioPhase.BUILDING,
@@ -300,11 +300,11 @@ class ScenarioManager:
                 event_type="thermal_buildup",
                 description="Motor and inverter heating up",
                 telemetry_modifiers={
-                    "motor_temp_c": lambda: random.uniform(90, 105),
-                    "inverter_temp_c": lambda: random.uniform(72, 82),
+                    # NO temp overrides - only behavioral changes
+                    "power_draw_kw": lambda: random.uniform(60, 80),
                 },
                 phase=ScenarioPhase.WARNING,
-                triggers_prediction=True,
+                triggers_prediction=False,  # DISABLED: Now ML-driven only
                 prediction_message="Motor and inverter temperatures elevated from sustained high-speed driving. Cooling period recommended to prevent inverter damage.",
                 days_to_failure=7,
             ),
@@ -313,8 +313,7 @@ class ScenarioManager:
                 event_type="power_derating",
                 description="System derating power to protect components",
                 telemetry_modifiers={
-                    "motor_temp_c": lambda: random.uniform(100, 115),
-                    "inverter_temp_c": lambda: random.uniform(80, 88),
+                    # NO temp overrides
                     "power_draw_kw": lambda: random.uniform(40, 60),
                 },
                 phase=ScenarioPhase.CRITICAL,
@@ -357,8 +356,7 @@ class ScenarioManager:
                 telemetry_modifiers={
                     "jerk_ms3": lambda: random.uniform(4.0, 6.0)
                     * random.choice([1, -1]),
-                    "battery_temp_c": lambda: 35 + random.uniform(5, 12),
-                    "motor_temp_c": lambda: 50 + random.uniform(20, 35),
+                    # NO temp overrides - let physics/fault drive temps
                     "speed_kmh": lambda: random.uniform(100, 140),
                 },
                 phase=ScenarioPhase.BUILDING,
@@ -368,13 +366,11 @@ class ScenarioManager:
                 event_type="systems_warning",
                 description="Multiple systems showing stress",
                 telemetry_modifiers={
-                    "battery_temp_c": lambda: random.uniform(48, 55),
-                    "motor_temp_c": lambda: random.uniform(85, 100),
-                    "brake_temp_c": lambda: random.uniform(200, 280),
+                    # NO temp overrides - only behavioral changes
                     "wear_index": lambda: random.uniform(0.5, 0.7),
                 },
                 phase=ScenarioPhase.WARNING,
-                triggers_prediction=True,
+                triggers_prediction=False,  # DISABLED: Now ML-driven only
                 prediction_message="CRITICAL: Multiple systems under stress - battery thermal, motor thermal, brake wear. Comprehensive service required.",
                 days_to_failure=5,
             ),
@@ -383,9 +379,7 @@ class ScenarioManager:
                 event_type="multi_critical",
                 description="Multiple systems critical",
                 telemetry_modifiers={
-                    "battery_temp_c": lambda: random.uniform(55, 62),
-                    "motor_temp_c": lambda: random.uniform(100, 110),
-                    "brake_temp_c": lambda: random.uniform(320, 380),
+                    # NO temp overrides
                     "wear_index": lambda: random.uniform(0.7, 0.9),
                 },
                 phase=ScenarioPhase.CRITICAL,

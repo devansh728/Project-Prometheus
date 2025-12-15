@@ -162,15 +162,128 @@ class AdvancedAnomalyDetector:
                 self.personalized_thresholds[key] = val
 
     def _compute_baseline_stats(self, data: pd.DataFrame) -> None:
-        """Compute baseline statistics for threshold-based checks."""
+        """Compute baseline statistics for ALL 66 aggregate columns expected by ML models.
+
+        The LightGBM model expects columns like: speed_kph_mean, speed_kph_std, etc.
+        We compute these from the raw telemetry columns in the historical data.
+        """
+        # Base columns that get aggregated (without suffix)
+        base_columns = [
+            "speed_kph",
+            "motor_rpm",
+            "motor_temp_c",
+            "inverter_temp_c",
+            "battery_soc_pct",
+            "battery_voltage_v",
+            "battery_current_a",
+            "battery_temp_c",
+            "battery_cell_delta_v",
+            "hvac_power_kw",
+            "throttle_pct",
+            "brake_pct",
+            "regen_pct",
+            "accel_x",
+            "accel_y",
+            "accel_z",
+        ]
+
+        # Also store raw column stats
         numeric_cols = data.select_dtypes(include=[np.number]).columns
         for col in numeric_cols:
-            self.baseline_stats[col] = {
-                "mean": float(data[col].mean()),
-                "std": float(data[col].std()),
-                "min": float(data[col].min()),
-                "max": float(data[col].max()),
+            if col in data.columns and len(data[col].dropna()) > 0:
+                self.baseline_stats[col] = {
+                    "mean": float(data[col].mean()),
+                    "std": float(data[col].std()) if len(data[col]) > 1 else 0.1,
+                    "min": float(data[col].min()),
+                    "max": float(data[col].max()),
+                }
+
+        # Generate aggregate column stats (mean, std, min, max variants)
+        # These are what the LightGBM model actually expects
+        for base_col in base_columns:
+            # Find the matching raw column in data (handle naming variations)
+            raw_col = None
+            if base_col in data.columns:
+                raw_col = base_col
+            elif base_col.replace("_pct", "_percent") in data.columns:
+                raw_col = base_col.replace("_pct", "_percent")
+
+            if raw_col and raw_col in data.columns:
+                col_data = data[raw_col].dropna()
+                if len(col_data) > 0:
+                    col_mean = float(col_data.mean())
+                    col_std = (
+                        float(col_data.std()) if len(col_data) > 1 else col_mean * 0.1
+                    )
+                    col_min = float(col_data.min())
+                    col_max = float(col_data.max())
+                else:
+                    # Fallback defaults
+                    col_mean, col_std, col_min, col_max = 0, 0.1, 0, 1
+            else:
+                # Column not found - use sensible defaults based on column type
+                defaults = {
+                    "speed_kph": (60, 20, 0, 150),
+                    "motor_rpm": (3000, 1500, 0, 8000),
+                    "motor_temp_c": (50, 15, 25, 100),
+                    "inverter_temp_c": (45, 12, 25, 90),
+                    "battery_soc_pct": (70, 20, 20, 100),
+                    "battery_voltage_v": (380, 20, 350, 420),
+                    "battery_current_a": (80, 40, 0, 200),
+                    "battery_temp_c": (30, 8, 20, 55),
+                    "battery_cell_delta_v": (0.05, 0.03, 0, 0.15),
+                    "hvac_power_kw": (2, 1, 0, 5),
+                    "throttle_pct": (30, 25, 0, 100),
+                    "brake_pct": (10, 15, 0, 100),
+                    "regen_pct": (60, 20, 0, 100),
+                    "accel_x": (0.1, 0.3, -2, 2),
+                    "accel_y": (0, 0.1, -1, 1),
+                    "accel_z": (1, 0.1, 0.8, 1.2),
+                }
+                col_mean, col_std, col_min, col_max = defaults.get(
+                    base_col, (0, 0.1, 0, 1)
+                )
+
+            # Create all 4 aggregate columns for this base
+            self.baseline_stats[f"{base_col}_mean"] = {
+                "mean": col_mean,
+                "std": col_std * 0.3,
+                "min": col_min,
+                "max": col_max,
             }
+            self.baseline_stats[f"{base_col}_std"] = {
+                "mean": col_std,
+                "std": col_std * 0.5,
+                "min": 0,
+                "max": col_std * 3,
+            }
+            self.baseline_stats[f"{base_col}_min"] = {
+                "mean": col_min,
+                "std": col_std * 0.5,
+                "min": col_min * 0.8,
+                "max": col_mean,
+            }
+            self.baseline_stats[f"{base_col}_max"] = {
+                "mean": col_max,
+                "std": col_std * 0.5,
+                "min": col_mean,
+                "max": col_max * 1.2,
+            }
+
+        # Add the two extra derived features
+        power_mean = self.baseline_stats.get("power_kw_mean", {}).get("mean", 30)
+        self.baseline_stats["power_kw_mean"] = {
+            "mean": power_mean,
+            "std": 15,
+            "min": 0,
+            "max": 150,
+        }
+        self.baseline_stats["accel_magnitude_mean"] = {
+            "mean": 1.0,
+            "std": 0.3,
+            "min": 0,
+            "max": 3,
+        }
 
     def train(
         self, historical_data: pd.DataFrame, driver_profile: str = "normal"
@@ -292,6 +405,10 @@ class AdvancedAnomalyDetector:
         - LSTM-AE for anomaly score
         - LightGBM for failure probability
         - LightGBM for severity classification
+
+        IMPORTANT: ML models require aggregate features (mean, std, min, max).
+        Until aggregate features are available (~10 frames), only telemetry-based
+        detection is used (active faults, temperature thresholds).
         """
         start_time = time.time()
 
@@ -300,40 +417,110 @@ class AdvancedAnomalyDetector:
 
         # Add frame to window buffer
         aggregate_features = self.window_buffer.add_frame(telemetry)
+        frame_count = self.window_buffer.frame_count
 
-        # Prepare features for prediction
-        if aggregate_features is not None:
-            # Use aggregate features from window
-            feature_dict = aggregate_features.iloc[0].to_dict()
-            features = self._prepare_features(feature_dict)
-        else:
-            # Use raw telemetry
-            features = self._prepare_features(telemetry)
-
-        # Get predictions from ml_pipeline models
-        failure_prob, is_failure = self.model_loader.predict_failure(features)
-        severity = self.model_loader.predict_severity(features)
-
-        # Compute anomaly score using LSTM-AE (if sequence available and dimensions match)
-        sequence = self.window_buffer.get_sequence_for_lstm(seq_len=30)
-        expected_dim = (
-            self.model_loader.lstm_config.get("input_dim")
-            if self.model_loader.lstm_config
-            else None
+        # PRIMARY: Check for actual telemetry anomalies (active faults or temperature thresholds)
+        # These work IMMEDIATELY without needing ML models
+        active_faults = telemetry.get("active_faults", [])
+        has_active_faults = (
+            len(active_faults) > 0
+            if isinstance(active_faults, list)
+            else bool(active_faults)
         )
 
-        if (
-            3
-            sequence is not None
-            and expected_dim is not None
-            and sequence.shape[1] == expected_dim
-        ):
-            anomaly_score = self.model_loader.compute_anomaly_score(sequence)
-            is_anomaly = self.model_loader.is_anomaly(anomaly_score)
+        # Temperature-based anomaly detection
+        brake_temp = telemetry.get("brake_temp_c", 0)
+        battery_temp = telemetry.get("battery_temp_c", 0)
+        motor_temp = telemetry.get("motor_temp_c", 0)
+
+        temp_anomaly = (
+            brake_temp > 200  # Brake overheating
+            or battery_temp > 50  # Battery thermal issue
+            or motor_temp > 100  # Motor thermal issue
+        )
+
+        # ============================================================
+        # ML PREDICTIONS - ONLY when aggregate features are available
+        # ============================================================
+        if aggregate_features is not None:
+            # Use aggregate features from window - these have proper mean/std/min/max columns
+            feature_dict = aggregate_features.iloc[0].to_dict()
+            features = self._prepare_features(feature_dict)
+            feature_source = "aggregate"
+            use_ml = True
+
+            # Get predictions from ml_pipeline models
+            failure_prob, is_failure = self.model_loader.predict_failure(features)
+            severity = self.model_loader.predict_severity(features)
+
+            # Compute anomaly score using LSTM-AE (if sequence available and dimensions match)
+            sequence = self.window_buffer.get_sequence_for_lstm(seq_len=30)
+            expected_dim = (
+                self.model_loader.lstm_config.get("input_dim")
+                if self.model_loader.lstm_config
+                else None
+            )
+
+            lstm_used = False
+            if (
+                sequence is not None
+                and expected_dim is not None
+                and sequence.shape[1] == expected_dim
+            ):
+                anomaly_score = self.model_loader.compute_anomaly_score(sequence)
+                lstm_threshold = (
+                    self.model_loader.lstm_config.get("threshold", 0.5)
+                    if self.model_loader.lstm_config
+                    else 0.5
+                )
+                lstm_anomaly = anomaly_score > lstm_threshold
+                lstm_used = True
+            else:
+                # LSTM not available - use LightGBM failure_prob as anomaly score
+                anomaly_score = failure_prob
+                lstm_anomaly = False
+                lstm_threshold = None
+
+            # Determine ML-based anomaly (only trust if using aggregates)
+            ml_anomaly = is_failure or lstm_anomaly
+
         else:
-            # Fallback: use failure probability as proxy for anomaly score
-            anomaly_score = failure_prob
-            is_anomaly = failure_prob > 0.5
+            # NO AGGREGATE FEATURES YET - Skip ML models entirely
+            # Raw telemetry doesn't have mean/std/min/max columns that models expect
+            feature_source = "raw (ML skipped)"
+            use_ml = False
+
+            # Safe defaults - no ML prediction yet
+            failure_prob = 0.0
+            is_failure = False
+            severity = "low"
+            anomaly_score = 0.0
+            lstm_used = False
+            lstm_anomaly = False
+            lstm_threshold = None
+            ml_anomaly = False
+            features = []  # Empty for logging
+
+        # Final anomaly determination:
+        # ONLY use telemetry-based detection (faults + temperature thresholds)
+        # ML predictions are INFORMATIONAL ONLY - they don't trigger anomaly status
+        # (The LightGBM model was trained on hourly historical data and is miscalibrated
+        # for real-time inference with 1-second intervals)
+        is_anomaly = has_active_faults or temp_anomaly
+
+        # Determine severity based on source
+        if has_active_faults:
+            severity = "high" if brake_temp > 150 or battery_temp > 45 else "medium"
+        elif temp_anomaly:
+            if brake_temp > 300 or battery_temp > 55:
+                severity = "critical"
+            elif brake_temp > 200 or battery_temp > 50 or motor_temp > 100:
+                severity = "high"
+            else:
+                severity = "medium"
+        elif not use_ml:
+            severity = "low"
+        # else: keep ML-predicted severity
 
         # Identify anomaly type and affected components
         anomaly_type, affected_components = self._identify_anomaly_type(telemetry)
@@ -341,23 +528,78 @@ class AdvancedAnomalyDetector:
         # Get contributing factors
         contributing_factors = self._identify_contributing_factors(telemetry)
 
-        # Estimate time to failure
-        ttf = self._estimate_time_to_failure(failure_prob)
+        # Estimate time to failure (only if ML is active)
+        ttf = self._estimate_time_to_failure(failure_prob) if use_ml else 168.0
 
         # Compute confidence based on data availability
-        confidence = 0.5
-        if sequence is not None:
-            confidence = 0.85
-        if aggregate_features is not None:
-            confidence = 0.9
+        confidence = (
+            0.3 if not use_ml else (0.9 if aggregate_features is not None else 0.5)
+        )
 
         self.last_inference_latency_ms = (time.time() - start_time) * 1000
 
+        # ==================== DETAILED ML LOGGING ====================
+        # Log every 10 frames or when anomaly detected
+        should_log = (frame_count <= 3) or (frame_count % 30 == 0) or is_anomaly
+
+        if should_log:
+            print(f"\n{'='*60}")
+            print(
+                f"🧠 ML MODEL PREDICTIONS [Frame {frame_count}] - Vehicle: {self.vehicle_id}"
+            )
+            print(f"{'='*60}")
+            print(f"📊 Feature Source: {feature_source} | ML Active: {use_ml}")
+            print(f"")
+
+            if use_ml:
+                print(f"� ML PREDICTIONS (Informational Only - not used for anomaly detection)")
+                print(f"   Note: Model trained on hourly data, not calibrated for real-time")
+                print(f"")
+                print(f"🔹 MODEL 1: LightGBM Failure Predictor")
+                print(f"   Probability: {failure_prob*100:.2f}%")
+                print(f"")
+                print(f"🔹 MODEL 2: LightGBM Severity Classifier")
+                print(f"   Predicted Severity: {severity}")
+                print(f"")
+                print(f"🔹 MODEL 3: LSTM Autoencoder")
+                if lstm_used:
+                    print(f"   Anomaly Score: {anomaly_score:.4f}")
+                else:
+                    print(f"   ⚠️ NOT USED - Dimension mismatch")
+            else:
+                print(
+                    f"⏳ ML SKIPPED - Waiting for aggregate features ({frame_count}/10 frames)"
+                )
+
+            print(f"")
+            print(f"📍 TELEMETRY CHECK:")
+            print(f"   Active Faults: {active_faults}")
+            print(f"   Brake Temp: {brake_temp:.1f}°C (threshold: 200°C)")
+            print(f"   Battery Temp: {battery_temp:.1f}°C (threshold: 50°C)")
+            print(f"   Motor Temp: {motor_temp:.1f}°C (threshold: 100°C)")
+            print(f"")
+            print(f"🎯 FINAL RESULT:")
+            print(f"   Is Anomaly: {'✅ YES' if is_anomaly else '❌ NO'}")
+            print(f"   Anomaly Type: {anomaly_type}")
+            print(f"   Severity: {severity}")
+            print(f"   Failure Risk: {failure_prob*100:.1f}%")
+            reason = (
+                "Active Faults"
+                if has_active_faults
+                else (
+                    "Temp Threshold"
+                    if temp_anomaly
+                    else ("Model Prediction" if (is_anomaly and use_ml) else "Normal")
+                )
+            )
+            print(f"   Reason: {reason}")
+            print(f"{'='*60}\n")
+
         return AnomalyResult(
-            is_anomaly=is_anomaly or is_failure,
+            is_anomaly=is_anomaly,
             anomaly_score=round(float(anomaly_score), 4),
             anomaly_type=anomaly_type if is_anomaly else "normal",
-            severity=severity,
+            severity=severity if is_anomaly else "low",
             confidence=round(confidence, 3),
             failure_risk_pct=round(failure_prob * 100, 1),
             time_to_failure_hours=ttf,

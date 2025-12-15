@@ -91,6 +91,18 @@ class ServiceFeedback:
     comments: str
     submitted_at: str
 
+@dataclass
+class InventoryItem:
+    """Inventory item data model."""
+
+    id: str
+    component: str
+    quantity: int
+    unit_price: float
+    total_value: float
+    last_updated: str
+    center_id: str
+
 
 class Database:
     """
@@ -256,6 +268,22 @@ class Database:
                 avg_satisfaction REAL DEFAULT 0.0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
+            )
+        """
+        )
+
+        # Inventory Items table
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS inventory_items (
+                id TEXT PRIMARY KEY,
+                component TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_price REAL NOT NULL,
+                total_value REAL NOT NULL,
+                last_updated TEXT NOT NULL,
+                center_id TEXT NOT NULL,
+                FOREIGN KEY (center_id) REFERENCES service_centers(id)
             )
         """
         )
@@ -1266,6 +1294,110 @@ class Database:
             "total_services": new_total,
             "avg_satisfaction": round(new_avg, 2),
         }
+
+    def add_inventory_item(
+        self,
+        component: str,
+        quantity: int,
+        unit_price: float,
+        center_id: str,
+    ) -> Dict:
+        """Add a new inventory item."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        item_id = f"INV-{uuid.uuid4().hex[:8].upper()}"
+        total_value = quantity * unit_price
+        now = datetime.now().isoformat()
+
+        cursor.execute(
+            """
+            INSERT INTO inventory_items
+            (id, component, quantity, unit_price, total_value, last_updated, center_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (item_id, component, quantity, unit_price, total_value, now, center_id),
+        )
+
+        conn.commit()
+        conn.close()
+
+        return {
+            "id": item_id,
+            "component": component,
+            "quantity": quantity,
+            "unit_price": unit_price,
+            "total_value": total_value,
+            "last_updated": now,
+            "center_id": center_id,
+        }
+
+    def get_inventory_items(self, center_id: str = None) -> List[Dict]:
+        """Get inventory items, optionally filtered by center."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        if center_id:
+            cursor.execute(
+                "SELECT * FROM inventory_items WHERE center_id = ? ORDER BY component",
+                (center_id,),
+            )
+        else:
+            cursor.execute("SELECT * FROM inventory_items ORDER BY component")
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return [dict(row) for row in rows]
+
+    def update_inventory_item(
+        self,
+        item_id: str,
+        quantity: int = None,
+        unit_price: float = None,
+    ) -> bool:
+        """Update an inventory item's quantity and/or unit price."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        updates = []
+        params = []
+        if quantity is not None:
+            updates.append("quantity = ?")
+            params.append(quantity)
+        if unit_price is not None:
+            updates.append("unit_price = ?")
+        params.append(unit_price)
+
+        if not updates:
+            conn.close()
+            return False
+
+        params.append(datetime.now().isoformat())
+        params.append(item_id)
+
+        cursor.execute(
+            f"UPDATE inventory_items SET {', '.join(updates)}, total_value = quantity * unit_price, last_updated = ? WHERE id = ?",
+            params,
+        )
+
+        success = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        return success
+
+    def delete_inventory_item(self, item_id: str) -> bool:
+        """Delete an inventory item."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("DELETE FROM inventory_items WHERE id = ?", (item_id,))
+
+        success = cursor.rowcount > 0
+        conn.commit()
+        conn.close()
+        return success
+
 
 
 # Singleton instance

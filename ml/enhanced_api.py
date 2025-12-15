@@ -788,6 +788,12 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
         active_prediction_id = None
         diagnosis_sent = False
 
+        # ML prediction cooldown and frame tracking
+        last_ml_prediction_time: datetime = None
+        ML_PREDICTION_COOLDOWN_SECONDS = 15  # Reduced for faster demo response
+        frame_count = 0  # Track frames for aggregate feature availability
+        MIN_FRAMES_FOR_ML = 10  # Reduced from 60 for faster ML predictions
+
         # Send connection confirmation
         await websocket.send_json(
             {
@@ -814,15 +820,22 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                 command = data.get("command")
 
                 if command == "inject_fault":
-                    generator.inject_fault(
-                        data.get("fault_type", "overheat"), data.get("severity", 1.0)
+                    fault_type = data.get("fault_type", "overheat")
+                    severity = data.get("severity", 1.0)
+                    print(
+                        f"🛠️ FAULT INJECTION: type='{fault_type}', severity={severity}"
+                    )
+                    generator.inject_fault(fault_type, severity)
+                    print(
+                        f"✅ Fault injected, active_faults={list(generator.active_faults.keys())}"
                     )
                     await websocket.send_json(
                         {
                             "type": "command_response",
                             "command": "inject_fault",
                             "status": "success",
-                            "message": f"Fault '{data.get('fault_type')}' injected",
+                            "message": f"Fault '{fault_type}' injected with severity {severity}",
+                            "active_faults": list(generator.active_faults.keys()),
                         }
                     )
 
@@ -944,6 +957,14 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
 
                             if is_critical_brake:
                                 # Send voice call trigger for critical brake scenarios
+                                # Use actual telemetry values
+                                actual_brake_temp = telemetry.get("brake_temp_c", 350)
+                                actual_efficiency = max(
+                                    5,
+                                    round(
+                                        (1 - min(actual_brake_temp, 450) / 500) * 100, 1
+                                    ),
+                                )
                                 await websocket.send_json(
                                     {
                                         "type": "voice_call_trigger",
@@ -957,8 +978,11 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                                             "estimated_cost": diagnosis.get(
                                                 "estimated_cost"
                                             ),
-                                            "brake_efficiency": 15,  # Simulated low efficiency
-                                            "temperature": 350,  # Simulated high temp
+                                            "brake_efficiency": actual_efficiency,  # FROM TELEMETRY
+                                            "temperature": actual_brake_temp,  # FROM TELEMETRY
+                                            "failure_risk_pct": result.get(
+                                                "failure_risk_pct", 0
+                                            ),
                                         },
                                     }
                                 )
@@ -1047,6 +1071,11 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
 
                     if is_critical_brake:
                         print(f"🚨 Triggering voice call for brake diagnosis!")
+                        # Calculate brake efficiency from actual telemetry
+                        actual_brake_temp = telemetry.get("brake_temp_c", 350)
+                        actual_efficiency = max(
+                            5, round((1 - min(actual_brake_temp, 450) / 500) * 100, 1)
+                        )
                         await websocket.send_json(
                             {
                                 "type": "voice_call_trigger",
@@ -1058,8 +1087,11 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                                     "summary": diagnosis.get("summary"),
                                     "urgency": diagnosis.get("urgency"),
                                     "estimated_cost": diagnosis.get("estimated_cost"),
-                                    "brake_efficiency": 15,
-                                    "temperature": 350,
+                                    "brake_efficiency": actual_efficiency,  # FROM TELEMETRY
+                                    "temperature": actual_brake_temp,  # FROM TELEMETRY
+                                    "failure_risk_pct": result.get(
+                                        "failure_risk_pct", 0
+                                    ),
                                 },
                             }
                         )
@@ -1080,6 +1112,14 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
 
             # Process through ML pipeline
             result = pipeline.process(telemetry)
+
+            # Track frames for aggregate feature availability
+            frame_count += 1
+            has_aggregates = frame_count >= MIN_FRAMES_FOR_ML
+
+            # Add aggregate status to result for debugging
+            result["has_aggregate_features"] = has_aggregates
+            result["frames_collected"] = frame_count
 
             # Convert numpy types
             def convert_value(v):
@@ -1124,6 +1164,14 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                     if result.get("is_anomaly")
                     else ["Master", "Data"]
                 ),
+                # ML status for debugging
+                "ml_status": {
+                    "frames_collected": frame_count,
+                    "min_frames_required": MIN_FRAMES_FOR_ML,
+                    "aggregates_ready": has_aggregates,
+                    "prediction_active": active_prediction_id is not None,
+                    "diagnosis_sent": diagnosis_sent,
+                },
             }
 
             # Add scenario info if active
@@ -1134,17 +1182,50 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                     "description": scenario_result.get("description"),
                 }
 
-                # Check if prediction should trigger
-                if "trigger_prediction" in scenario_result:
+                # Check if scenario triggers prediction (legacy mode)
+                if "trigger_prediction" in scenario_result and not active_prediction_id:
                     pred_data = scenario_result["trigger_prediction"]
+
+                    # Use ACTUAL ML values instead of hardcoded scenario values
+                    ml_severity = result.get(
+                        "severity", pred_data.get("severity", "medium")
+                    )
+                    ml_failure_risk = result.get("failure_risk_pct", 50)
+
+                    # Calculate days to failure from ML time_to_failure_hours
+                    ttf_hours = result.get("time_to_failure_hours")
+                    if ttf_hours:
+                        ml_days = max(1, int(ttf_hours / 24))
+                    else:
+                        # Estimate from failure risk
+                        if ml_failure_risk > 80:
+                            ml_days = 1
+                        elif ml_failure_risk > 60:
+                            ml_days = 3
+                        elif ml_failure_risk > 40:
+                            ml_days = 7
+                        else:
+                            ml_days = pred_data.get("days_to_failure", 7)
+
                     prediction = orchestrator.create_prediction(
                         vehicle_id=vin,
                         component=pred_data["component"],
-                        anomaly_type=pred_data["anomaly_type"],
-                        severity=pred_data["severity"],
-                        days_to_failure=pred_data["days_to_failure"],
+                        anomaly_type=result.get(
+                            "anomaly_type", pred_data["anomaly_type"]
+                        ),
+                        severity=ml_severity,  # Use ML severity
+                        days_to_failure=ml_days,  # Use ML-calculated days
                         message=pred_data["message"],
                         requires_service=pred_data["requires_service"],
+                        # Pass actual ML values for context
+                        ml_context={
+                            "failure_risk_pct": ml_failure_risk,
+                            "anomaly_score": result.get("anomaly_score", 0),
+                            "brake_temp_c": telemetry.get("brake_temp_c", 0),
+                            "battery_temp_c": telemetry.get("battery_temp_c", 0),
+                            "motor_temp_c": telemetry.get("motor_temp_c", 0),
+                            "regen_efficiency": telemetry.get("regen_efficiency", 0),
+                        },
                     )
                     response["prediction"] = prediction
                     response["prediction"]["actions"] = [
@@ -1154,6 +1235,15 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                     response["prediction"][
                         "timeout_seconds"
                     ] = PREDICTION_TIMEOUT_SECONDS
+                    response["prediction"]["ml_values"] = {
+                        "failure_risk_pct": ml_failure_risk,
+                        "days_to_failure": ml_days,
+                        "severity": ml_severity,
+                        "brake_temp": telemetry.get("brake_temp_c", 0),
+                        "brake_efficiency": round(
+                            (1 - telemetry.get("brake_temp_c", 0) / 500) * 100, 1
+                        ),
+                    }
 
                     # Track for auto-timeout
                     active_prediction_id = prediction["prediction_id"]
@@ -1163,6 +1253,142 @@ async def websocket_scenario_stream(websocket: WebSocket, vin: str):
                 # Check if scenario complete
                 if scenario_result.get("scenario_complete"):
                     response["scenario"]["complete"] = True
+
+            # ML-BASED PREDICTION TRIGGER (independent of scenarios)
+            # Only trigger when:
+            # 1. No active prediction already
+            # 2. Diagnosis not already sent
+            # 3. Aggregate features are ready (60+ frames collected)
+            # 4. Cooldown period passed since last ML prediction
+            # 5. Actual telemetry exceeds thresholds (not just model output)
+
+            # Calculate cooldown check
+            cooldown_passed = (
+                last_ml_prediction_time is None
+                or (datetime.now() - last_ml_prediction_time).total_seconds()
+                > ML_PREDICTION_COOLDOWN_SECONDS
+            )
+
+            # Check if telemetry actually shows anomalous values (guard against false ML positives)
+            # PRIMARY: Active faults (from fault injection button)
+            # SECONDARY: Temperature thresholds (higher for normal driving variance)
+            # Simplified guard: The anomaly_detector.predict() now handles all the checks
+            # (active faults, temperature thresholds, model predictions)
+            # We just need to trust its is_anomaly result
+            is_ml_anomaly = result.get("is_anomaly", False)
+            failure_risk = result.get("failure_risk_pct", 0)
+
+            # Debug: Log condition values every 10 frames
+            if frame_count <= 5 or frame_count % 30 == 0:
+                print(
+                    f"🔍 ML Guard Check [frame {frame_count}]: aggregates={has_aggregates}, anomaly_detected={is_ml_anomaly}, "
+                    f"temps=(brake:{telemetry.get('brake_temp_c', 0):.0f}, batt:{telemetry.get('battery_temp_c', 0):.0f}, motor:{telemetry.get('motor_temp_c', 0):.0f}), "
+                    f"failure_risk={result.get('failure_risk_pct', 0):.1f}%"
+                )
+
+            # Only trigger ML prediction if:
+            # 1. No active prediction
+            # 2. Diagnosis not sent
+            # 3. Cooldown passed
+            # 4. The anomaly_detector says it's an anomaly (based on faults/temps/models)
+            if (
+                not active_prediction_id
+                and not diagnosis_sent
+                and cooldown_passed
+                and is_ml_anomaly
+                and failure_risk
+                > 30  # Lowered threshold - anomaly_detector already validated
+            ):
+
+                ml_severity = result.get("severity", "medium")
+                ml_failure_risk = result.get("failure_risk_pct", 0)
+                anomaly_type = result.get("anomaly_type", "unknown")
+
+                # Infer component from anomaly type
+                component_map = {
+                    "battery_thermal": "Battery",
+                    "motor_thermal": "Motor",
+                    "thermal_brake": "Brakes",
+                    "driving_behavior": "Brakes",
+                    "combined": "Multiple Systems",
+                    "thermal_battery": "Battery",
+                    "thermal_motor": "Motor",
+                }
+                component = component_map.get(anomaly_type, "Vehicle System")
+
+                # Calculate days to failure
+                ttf_hours = result.get("time_to_failure_hours")
+                if ttf_hours:
+                    ml_days = max(1, int(ttf_hours / 24))
+                else:
+                    if ml_failure_risk > 80:
+                        ml_days = 1
+                    elif ml_failure_risk > 60:
+                        ml_days = 3
+                    else:
+                        ml_days = 7
+
+                # Generate prediction message based on ML analysis
+                factors = result.get("contributing_factors", [])
+                factor_text = ""
+                if factors:
+                    top_factors = factors[:2]
+                    factor_text = " Contributing factors: " + ", ".join(
+                        [f"{f['feature']} ({f['deviation']})" for f in top_factors]
+                    )
+
+                message = (
+                    f"ML model detected {ml_severity} severity {anomaly_type.replace('_', ' ')} anomaly. "
+                    f"Failure risk: {ml_failure_risk:.1f}%.{factor_text}"
+                )
+
+                requires_service = ml_severity in ["critical", "high"]
+
+                prediction = orchestrator.create_prediction(
+                    vehicle_id=vin,
+                    component=component,
+                    anomaly_type=anomaly_type,
+                    severity=ml_severity,
+                    days_to_failure=ml_days,
+                    message=message,
+                    requires_service=requires_service,
+                    ml_context={
+                        "failure_risk_pct": ml_failure_risk,
+                        "anomaly_score": result.get("anomaly_score", 0),
+                        "brake_temp_c": telemetry.get("brake_temp_c", 0),
+                        "battery_temp_c": telemetry.get("battery_temp_c", 0),
+                        "motor_temp_c": telemetry.get("motor_temp_c", 0),
+                    },
+                )
+
+                response["prediction"] = prediction
+                response["prediction"][
+                    "source"
+                ] = "ml_detection"  # Mark as ML-triggered
+                response["prediction"]["actions"] = [
+                    "accept_prediction",
+                    "reject_prediction",
+                ]
+                response["prediction"]["timeout_seconds"] = PREDICTION_TIMEOUT_SECONDS
+                response["prediction"]["ml_values"] = {
+                    "failure_risk_pct": ml_failure_risk,
+                    "days_to_failure": ml_days,
+                    "severity": ml_severity,
+                    "brake_temp": telemetry.get("brake_temp_c", 0),
+                    "brake_efficiency": round(
+                        (1 - min(telemetry.get("brake_temp_c", 0), 400) / 500) * 100, 1
+                    ),
+                }
+
+                # Log ML detection
+                print(
+                    f"🤖 ML Prediction Triggered: {component} - {ml_severity} severity - {ml_failure_risk:.1f}% risk"
+                )
+
+                active_prediction_id = prediction["prediction_id"]
+                prediction_created_at = datetime.now()
+                last_ml_prediction_time = datetime.now()  # Track for cooldown
+                diagnosis_sent = False
 
             # Add any pending notifications
             notifications = orchestrator.get_notifications(vin, unread_only=True)
@@ -2002,10 +2228,10 @@ async def inject_rogue_action(request: RogueActionRequest):
     if not app_state.orchestrator:
         raise HTTPException(status_code=503, detail="Orchestrator not available")
 
-    ueba_monitor = app_state.orchestrator.ueba_monitor
+    ueba = app_state.orchestrator.ueba
 
     # Log the rogue action - it will be flagged
-    ueba_monitor.log_action(
+    ueba.log_action(
         agent=request.agent,
         action=request.action,
         details={
@@ -2016,7 +2242,7 @@ async def inject_rogue_action(request: RogueActionRequest):
     )
 
     # Get the alert that was created
-    alerts = ueba_monitor.get_alerts()
+    alerts = ueba.get_alerts()
     latest_alert = alerts[-1] if alerts else None
 
     return {
@@ -2034,8 +2260,8 @@ async def get_agent_summary(agent: str):
     if not app_state.orchestrator:
         raise HTTPException(status_code=503, detail="Orchestrator not available")
 
-    ueba_monitor = app_state.orchestrator.ueba_monitor
-    return ueba_monitor.get_agent_summary(agent)
+    ueba = app_state.orchestrator.ueba
+    return ueba.get_agent_summary(agent)
 
 
 # ==================== Inventory/Parts Endpoints ====================

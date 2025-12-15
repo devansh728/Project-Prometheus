@@ -10,6 +10,7 @@ import type { WebSocketMessage, Prediction, SafetyAdvice, DiagnosisResult } from
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/api/v1';
 
 interface UseWebSocketOptions {
+    enabled?: boolean;  // Only connect when true (default: false, wait for scenario start)
     onPrediction?: (prediction: Prediction) => void;
     onSafetyAdvice?: (advice: SafetyAdvice) => void;
     onDiagnosis?: (diagnosis: DiagnosisResult) => void;
@@ -85,9 +86,16 @@ export function useWebSocket(vin: string | null, options: UseWebSocketOptions = 
         return sendCommand({ command: 'decline_service', diagnosis_id: diagnosisId });
     }, [sendCommand]);
 
-    // Connect on mount with vin, disconnect on unmount
+    // Extract enabled flag from options (default: false - wait for scenario start)
+    const enabled = optionsRef.current.enabled ?? false;
+
+    // Connect when enabled and vin is available, disconnect on unmount
     useEffect(() => {
-        if (!vin) return;
+        if (!vin || !enabled) {
+            // Not enabled yet - don't connect
+            console.log('WebSocket waiting for scenario start (enabled:', enabled, ', vin:', vin, ')');
+            return;
+        }
 
         isCleaningUpRef.current = false;
         reconnectCountRef.current = 0;
@@ -99,6 +107,16 @@ export function useWebSocket(vin: string | null, options: UseWebSocketOptions = 
             if (isCleaningUpRef.current) return;
 
             try {
+                // Guard against duplicate connections (React StrictMode double-mount)
+                if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
+                    console.log('WebSocket already connecting, skipping duplicate');
+                    return;
+                }
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                    console.log('WebSocket already connected, skipping duplicate');
+                    return;
+                }
+                
                 const ws = new WebSocket(wsUrl);
                 wsRef.current = ws;
 
@@ -255,7 +273,7 @@ export function useWebSocket(vin: string | null, options: UseWebSocketOptions = 
             reconnectCountRef.current = 0;
             storeReset();
         };
-    }, [vin]); // ONLY depend on vin - all store functions are stable
+    }, [vin, enabled]); // Depend on vin and enabled - all store functions are stable
 
     // Manual disconnect
     const disconnect = useCallback(() => {

@@ -338,42 +338,26 @@ class EnhancedTelemetryGenerator:
         regen_efficiency: float,
         dt_hours: float,
     ) -> float:
-        """Update brake temperature based on mechanical braking.
-
-        Physics calibrated for realistic values:
-        - Normal city driving: 50-100°C
-        - Aggressive braking: 150-250°C
-        - Fault condition: 300-400°C
-        """
-        dt_seconds = dt_hours * 3600
-
+        """Update brake temperature based on mechanical braking."""
         # Mechanical braking = total braking - regen
         if deceleration_ms2 < 0:
-            speed_ms = speed_kmh / 3.6
-            # Braking power in kW
             total_braking_power = (
-                abs(deceleration_ms2) * self.config.vehicle_mass_kg * speed_ms
-            ) / 1000
-            # With regen, less mechanical braking needed
+                abs(deceleration_ms2 * self.config.vehicle_mass_kg * speed_kmh / 3.6)
+                / 1000
+            )  # kW
             mechanical_braking = total_braking_power * (1 - regen_efficiency)
-            # Heat generation - REDUCED rate for realistic temps
-            # Only ~10% of braking energy heats the pads significantly
-            heat_rate = mechanical_braking * 0.1 * dt_seconds / 60  # °C per step
+            heat_rate = mechanical_braking * 0.8  # Heat generation rate
         else:
             heat_rate = 0
 
-        # Natural air cooling - INCREASED rate for faster cooling
-        # Brakes cool faster at higher speeds (more airflow)
-        airflow_factor = 1.0 + (speed_kmh / 100) * 0.5  # More cooling at speed
-        cool_rate = (self.brake_temp_c - 25) * 0.05 * airflow_factor * dt_seconds / 10
+        # Cooling
+        cool_rate = (self.brake_temp_c - 25) * 0.1 * dt_hours * 3600 / 60
 
         new_temp = self.brake_temp_c + heat_rate - cool_rate
 
-        # Apply faults - SIGNIFICANT temperature increase
+        # Apply faults
         if "brake_drag" in self.active_faults:
-            fault_severity = self.active_faults["brake_drag"].get("severity", 1.0)
-            # Constant heat from stuck caliper
-            new_temp += 15.0 * fault_severity * dt_seconds / 10
+            new_temp += 50.0 * self.active_faults["brake_drag"].get("severity", 1.0)
 
         return np.clip(new_temp, 20, 600)
 
@@ -508,95 +492,66 @@ class EnhancedTelemetryGenerator:
         if "cell_imbalance" in self.active_faults:
             cell_voltage_diff = self.active_faults["cell_imbalance"]["voltage_diff"]
 
-        # Calculate derived values for ML model features
-        # Motor RPM estimation (simplified: proportional to speed)
-        motor_rpm = self.current_speed_kmh * 55 if self.current_speed_kmh > 0 else 0
+        tire_circumference = 2 * np.pi * 0.3
+        wheel_rpm = (self.current_speed_kmh * 1000 / 60) / tire_circumference
+        motor_rpm = wheel_rpm * 9.0
 
-        # Battery electrical values
-        battery_voltage = 400 - (1 - self.battery_soc) * 50  # 350-400V range
-        battery_current = (
-            (power_draw * 1000 / battery_voltage) if battery_voltage > 0 else 0
-        )
+        charging_state = "discharging"
+        if self.current_speed_kmh == 0 and self.current_acceleration == 0:
+            if 0 <= datetime.now().hour <= 6: # Simplified logic
+                charging_state = "charging"
+            else:
+                charging_state = "idle"
+        active_dtcs = []
+        dtc_map = {
+            "cell_imbalance": "P0A80", # Replace Hybrid Battery Pack
+            "overheat": "P0A78",       # Drive Motor Inverter Performance
+            "coolant_low": "P0A93",    # Inverter Cooling System Performance
+            "motor_resolver": "P0A90", # Drive Motor Performance
+        }
+        for fault in self.active_faults:
+            if fault in dtc_map:
+                active_dtcs.append(dtc_map[fault])
 
-        # HVAC power (varies with ambient temp difference)
-        hvac_power = 1.5 + abs(25 - self.battery_temp_c) * 0.1
-
-        # Throttle and brake percentages
-        throttle_pct = (
-            max(0, min(100, self.current_acceleration * 25 + 20))
-            if self.current_speed_kmh > 0
-            else 0
-        )
-        brake_pct = (
-            max(0, min(100, -self.current_acceleration * 30))
-            if self.current_acceleration < 0
-            else 0
-        )
-
-        # Acceleration components (simplified IMU simulation)
-        accel_x = self.current_acceleration  # Longitudinal
-        accel_y = jerk * 0.1 + np.random.normal(0, 0.05)  # Lateral (small)
-        accel_z = 9.81 + np.random.normal(0, 0.02)  # Vertical (gravity + noise)
-
-        # Build telemetry packet with ALL features needed by ML models
+        # Build telemetry packet
         telemetry = {
-            "timestamp": current_time.isoformat(),
+            "timestamp": int(datetime.now().timestamp()),
             "vehicle_id": self.config.vehicle_id,
             "driver_profile": self.config.driver_profile,
-            # Motion data - use speed_kph for ml_pipeline consistency
-            "speed_kph": round(
-                self.current_speed_kmh, 2
-            ),  # Renamed for ML compatibility
-            "speed_kmh": round(
-                self.current_speed_kmh, 2
-            ),  # Keep for backward compatibility
+            # Motion data
+            "speed_kmh": round(self.current_speed_kmh, 2),
             "acceleration_ms2": round(self.current_acceleration, 3),
             "jerk_ms3": round(jerk, 3),
-            # Motor data - NEW for ML models
-            "motor_rpm": round(motor_rpm, 0),
             # Power data
             "power_draw_kw": round(power_draw, 2),
-            "power_kw": round(power_draw, 2),  # Alias for ML compatibility
             "net_power_kw": round(net_power, 2),
             "regen_power_kw": (
                 round(power_draw - net_power, 2) if net_power < power_draw else 0
             ),
             "regen_efficiency": round(regen_efficiency, 3),
-            "regen_pct": round(regen_efficiency * 100, 1),  # NEW - percentage for ML
-            # Battery data - with ML-compatible names
+            # Battery data
             "battery_soc_pct": round(self.battery_soc * 100, 1),
             "battery_temp_c": round(self.battery_temp_c, 1),
-            "battery_voltage_v": round(battery_voltage, 1),  # NEW for ML
-            "battery_current_a": round(battery_current, 1),  # NEW for ML
             "cell_voltage_avg_v": round(base_cell_voltage, 3),
             "cell_voltage_diff_v": round(cell_voltage_diff, 3),
-            "battery_cell_delta_v": round(cell_voltage_diff, 3),  # Alias for ML
             # Thermal data
             "motor_temp_c": round(self.motor_temp_c, 1),
             "inverter_temp_c": round(self.inverter_temp_c, 1),
             "brake_temp_c": round(self.brake_temp_c, 1),
             "coolant_temp_c": round(self.coolant_temp_c, 1),
-            "ambient_temp_c": 25.0 + np.random.normal(0, 1),
-            # HVAC - NEW for ML
-            "hvac_power_kw": round(hvac_power, 2),
-            # Control inputs - NEW for ML
-            "throttle_pct": round(throttle_pct, 1),
-            "brake_pct": round(brake_pct, 1),
-            # IMU/Accelerometer - NEW for ML
-            "accel_x": round(accel_x, 3),
-            "accel_y": round(accel_y, 3),
-            "accel_z": round(accel_z, 3),
+            "ambient_temp_c": 25.0,  # Could be parameterized
+
+            "motor_rpm": round(motor_rpm, 0),
+            "charging_state": charging_state,
+            "dtc_codes": json.dumps(active_dtcs),
             # Wear data
             "wear_index": round(self.cumulative_wear_index, 4),
             "odometer_km": round(self.odometer_km, 1),
             # Fault indicators
             "active_faults": list(self.active_faults.keys()),
             "fault_count": len(self.active_faults),
-            # Anomaly labels for training (based on active faults)
-            "is_anomaly": len(self.active_faults) > 0,
-            "anomaly_type": (
-                list(self.active_faults.keys())[0] if self.active_faults else "normal"
-            ),
+            "label_is_anomaly": 1 if len(self.active_faults) > 0 else 0,
+            "label_failure_type": list(self.active_faults.keys())[0] if self.active_faults else "none"
         }
 
         return telemetry
@@ -605,14 +560,14 @@ class EnhancedTelemetryGenerator:
         self, days: int = 60, interval_hours: float = 1.0
     ) -> pd.DataFrame:
         """
-        Generate historical telemetry data WITH FAULT INJECTION for training.
+        Generate historical telemetry data.
 
         Args:
             days: Number of days of history
             interval_hours: Time between readings (default: hourly)
 
         Returns:
-            DataFrame with telemetry history including anomaly samples
+            DataFrame with telemetry history
         """
         # Reset state for clean history generation
         start_time = datetime.now() - timedelta(days=days)
@@ -620,38 +575,10 @@ class EnhancedTelemetryGenerator:
 
         total_steps = int(days * 24 / interval_hours)
 
-        # FAULT INJECTION SCHEDULE - inject faults at specific points for training data diversity
-        # Format: (start_pct, end_pct, fault_type, severity)
-        fault_schedule = [
-            (0.08, 0.10, "overheat", 1.0),  # 8-10% - Battery overheat
-            (0.18, 0.20, "brake_drag", 0.8),  # 18-20% - Brake drag
-            (0.28, 0.30, "cell_imbalance", 1.2),  # 28-30% - Cell imbalance
-            (0.38, 0.42, "coolant_low", 1.0),  # 38-42% - Coolant low
-            (0.50, 0.52, "motor_resolver", 0.9),  # 50-52% - Motor issue
-            (0.60, 0.63, "overheat", 1.5),  # 60-63% - Severe overheat
-            (0.72, 0.75, "brake_drag", 1.5),  # 72-75% - Severe brake issue
-            (0.85, 0.88, "cell_imbalance", 1.0),  # 85-88% - Cell imbalance
-            (0.92, 0.95, "overheat", 2.0),  # 92-95% - Critical overheat
-        ]
-
         for i in range(total_steps):
             current_time = start_time + timedelta(hours=i * interval_hours)
             hour = current_time.hour
             day_of_week = current_time.weekday()
-            progress = i / total_steps
-
-            # MANAGE FAULT INJECTION based on schedule
-            for start_pct, end_pct, fault_type, severity in fault_schedule:
-                if start_pct <= progress < end_pct:
-                    if fault_type not in self.active_faults:
-                        self.inject_fault(fault_type, severity)
-                elif progress >= end_pct and fault_type in self.active_faults:
-                    # Only clear if we're past this window
-                    if not any(
-                        s <= progress < e and f == fault_type
-                        for s, e, f, _ in fault_schedule
-                    ):
-                        self.clear_fault(fault_type)
 
             # Get activity level
             activity = self._get_driving_activity(hour, day_of_week)
@@ -725,108 +652,30 @@ class EnhancedTelemetryGenerator:
             self.odometer_km += self.current_speed_kmh * interval_hours
 
             base_cell_voltage = 3.7 + (self.battery_soc - 0.5) * 0.8
-            cell_voltage_diff = 0.05
-            if "cell_imbalance" in self.active_faults:
-                cell_voltage_diff = self.active_faults["cell_imbalance"]["voltage_diff"]
-
-            # Calculate derived values for ML model features
-            motor_rpm = self.current_speed_kmh * 55 if self.current_speed_kmh > 0 else 0
-            battery_voltage = 400 - (1 - self.battery_soc) * 50
-            battery_current = (
-                (power_draw * 1000 / battery_voltage) if battery_voltage > 0 else 0
-            )
-            hvac_power = 1.5 + abs(25 - self.battery_temp_c) * 0.1
-            throttle_pct = (
-                max(0, min(100, self.current_acceleration * 25 + 20))
-                if self.current_speed_kmh > 0
-                else 0
-            )
-            brake_pct = (
-                max(0, min(100, -self.current_acceleration * 30))
-                if self.current_acceleration < 0
-                else 0
-            )
-            accel_x = self.current_acceleration
-            accel_y = jerk * 0.1 + np.random.normal(0, 0.05)
-            accel_z = 9.81 + np.random.normal(0, 0.02)
-
-            # Determine severity based on fault type and state
-            severity = "low"
-            if self.active_faults:
-                fault_type = list(self.active_faults.keys())[0]
-                fault_severity = (
-                    list(self.active_faults.values())[0].get("severity", 1.0)
-                    if isinstance(list(self.active_faults.values())[0], dict)
-                    else 1.0
-                )
-                if self.battery_temp_c > 55 or self.brake_temp_c > 350:
-                    severity = "critical"
-                elif (
-                    self.battery_temp_c > 45
-                    or self.brake_temp_c > 280
-                    or fault_severity >= 1.5
-                ):
-                    severity = "high"
-                elif fault_severity >= 1.0:
-                    severity = "medium"
 
             records.append(
                 {
                     "timestamp": current_time.isoformat(),
                     "vehicle_id": self.config.vehicle_id,
                     "driver_profile": self.config.driver_profile,
-                    # Motion - with both naming conventions
-                    "speed_kph": round(self.current_speed_kmh, 2),
                     "speed_kmh": round(self.current_speed_kmh, 2),
                     "acceleration_ms2": round(self.current_acceleration, 3),
                     "jerk_ms3": round(jerk, 3),
-                    # Motor
-                    "motor_rpm": round(motor_rpm, 0),
-                    "motor_temp_c": round(self.motor_temp_c, 1),
-                    "inverter_temp_c": round(self.inverter_temp_c, 1),
-                    # Power
                     "power_draw_kw": round(power_draw, 2),
-                    "power_kw": round(power_draw, 2),
                     "net_power_kw": round(net_power, 2),
                     "regen_efficiency": round(regen_efficiency, 3),
-                    "regen_pct": round(regen_efficiency * 100, 1),
-                    # Battery
                     "battery_soc_pct": round(self.battery_soc * 100, 1),
                     "battery_temp_c": round(self.battery_temp_c, 1),
-                    "battery_voltage_v": round(battery_voltage, 1),
-                    "battery_current_a": round(battery_current, 1),
                     "cell_voltage_avg_v": round(base_cell_voltage, 3),
-                    "battery_cell_delta_v": round(cell_voltage_diff, 3),
-                    # Thermal
+                    "motor_temp_c": round(self.motor_temp_c, 1),
+                    "inverter_temp_c": round(self.inverter_temp_c, 1),
                     "brake_temp_c": round(self.brake_temp_c, 1),
                     "coolant_temp_c": round(self.coolant_temp_c, 1),
                     "ambient_temp_c": 25.0 + np.random.normal(0, 3),
-                    # HVAC
-                    "hvac_power_kw": round(hvac_power, 2),
-                    # Controls
-                    "throttle_pct": round(throttle_pct, 1),
-                    "brake_pct": round(brake_pct, 1),
-                    # IMU
-                    "accel_x": round(accel_x, 3),
-                    "accel_y": round(accel_y, 3),
-                    "accel_z": round(accel_z, 3),
-                    # Wear
                     "wear_index": round(self.cumulative_wear_index, 4),
                     "odometer_km": round(self.odometer_km, 1),
-                    # LABELS for training
-                    "is_anomaly": len(self.active_faults) > 0,
-                    "anomaly_type": (
-                        list(self.active_faults.keys())[0]
-                        if self.active_faults
-                        else "normal"
-                    ),
-                    "severity": severity,
-                    "fault_count": len(self.active_faults),
                 }
             )
-
-        # Clear any remaining faults
-        self.clear_all_faults()
 
         return pd.DataFrame(records)
 
@@ -887,8 +736,12 @@ if __name__ == "__main__":
     print("🚗 SentinEV Fleet Telemetry Generator")
     print("=" * 50)
 
-    files = generate_fleet_datasets(
-        output_dir="data/telemetry", num_vehicles=10, days=60
+    print("Generating High-Res (1s) data for Anomaly Models...")
+    generate_fleet_datasets(
+        output_dir="data/telemetry/high_res", 
+        num_vehicles=10, 
+        days=3,
+        interval_hours=1/3600
     )
 
     print("\n" + "=" * 50)

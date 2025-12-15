@@ -22,6 +22,7 @@ import { CriticalAlertModal } from '@/components/ui/CriticalAlertModal';
 import { VoiceCallModal } from '@/components/ui/VoiceCallModal';
 import { AgentConsoleLog } from '@/components/ui/AgentConsoleLog';
 import { FailurePredictionCard } from '@/components/ui/FailurePredictionCard';
+import { TelemetryDetailPanel } from '@/components/TelemetryDetailPanel';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTelemetryStore } from '@/stores/telemetryStore';
 import { useVehicleStore } from '@/stores/vehicleStore';
@@ -178,11 +179,12 @@ export default function VehicleMonitorPage() {
         toast.warning('🚨 CRITICAL ALERT', { description: 'Incoming call from SentinEV AI' });
     }, []);
 
-    // WebSocket connection
+    // WebSocket connection - only enabled when scenario is selected or active
     const {
         startScenario, stopScenario, acceptPrediction, rejectPrediction,
-        confirmService, declineService, isReconnecting
+        confirmService, declineService, isReconnecting, injectFault
     } = useWebSocket(vin, {
+        enabled: !!selectedScenario || !!activeScenario,  // Connect when scenario is selected (to send start) or active
         onPrediction: handlePrediction,
         onSafetyAdvice: handleSafetyAdvice,
         onDiagnosis: handleDiagnosis,
@@ -190,6 +192,12 @@ export default function VehicleMonitorPage() {
         onRedirectToChat: handleRedirectToChat,
         onVoiceCallTrigger: handleVoiceCallTrigger,
     });
+
+    // Fault injection handlers for testing ML predictions
+    const handleInjectFault = (faultType: string, severity: number, description: string) => {
+        injectFault(faultType, severity);
+        toast.info(`Fault injected: ${faultType}`, { description });
+    };
 
     // Countdown timer for prediction
     useEffect(() => {
@@ -332,6 +340,66 @@ export default function VehicleMonitorPage() {
                                     {scenario.description}
                                 </p>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Fault Injection Testing Card */}
+                    <Card className="mb-6 border-orange-500/30">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-orange-500" />
+                                ML Fault Injection (Testing)
+                            </CardTitle>
+                            <CardDescription>
+                                Inject faults to test real-time ML anomaly detection & predictions
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-yellow-500/50 hover:bg-yellow-500/10"
+                                    onClick={() => handleInjectFault('brake_drag', 0.8, 'Simulates aggressive driving pattern → brake wear')}
+                                >
+                                    🚗 Aggressive Driver
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-orange-500/50 hover:bg-orange-500/10"
+                                    onClick={() => handleInjectFault('overheat', 1.2, 'Hot weather → battery thermal stress')}
+                                >
+                                    ☀️ Battery Stress
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-red-500/50 hover:bg-red-500/10"
+                                    onClick={() => handleInjectFault('brake_drag', 1.8, 'Mountain descent → brake fade (CRITICAL)')}
+                                >
+                                    ⛰️ Brake Fade ⚠️
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-purple-500/50 hover:bg-purple-500/10"
+                                    onClick={() => handleInjectFault('motor_resolver', 1.0, 'High speed driving → motor/inverter strain')}
+                                >
+                                    🏎️ Motor Strain
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-red-600/50 hover:bg-red-600/10"
+                                    onClick={() => handleInjectFault('overheat', 2.0, 'Multiple systems under stress (CRITICAL)')}
+                                >
+                                    ⚡ Combined ⚠️
+                                </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-3">
+                                💡 Inject a fault, then watch the ML predictions appear in real-time logs below
+                            </p>
                         </CardContent>
                     </Card>
 
@@ -500,7 +568,7 @@ export default function VehicleMonitorPage() {
                                 </CardContent>
                             </Card>
 
-                            {/* Failure Prediction Card - Enhanced for Demo */}
+                            {/* Failure Prediction Card - Using ML values */}
                             <FailurePredictionCard
                                 failureProbability={anomaly?.failure_risk_pct || 0}
                                 anomalyScore={(anomaly?.failure_risk_pct || 0) / 100}
@@ -508,7 +576,12 @@ export default function VehicleMonitorPage() {
                                 component={anomaly?.type?.includes('brake') ? 'Brakes' :
                                     anomaly?.type?.includes('battery') ? 'Battery' :
                                         anomaly?.type?.includes('motor') ? 'Motor' : 'System'}
-                                daysToFailure={3}
+                                daysToFailure={
+                                    activePrediction?.days_to_failure ||
+                                    (anomaly?.failure_risk_pct && anomaly.failure_risk_pct > 80 ? 1 :
+                                     anomaly?.failure_risk_pct && anomaly.failure_risk_pct > 60 ? 3 :
+                                     anomaly?.failure_risk_pct && anomaly.failure_risk_pct > 40 ? 7 : undefined)
+                                }
                             />
 
                             {/* Notifications */}
@@ -534,6 +607,9 @@ export default function VehicleMonitorPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+
+                            {/* Telemetry Detail Panel - All 66 Features */}
+                            <TelemetryDetailPanel telemetry={telemetry} />
                         </div>
                     </div>
 

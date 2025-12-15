@@ -1312,6 +1312,7 @@ ALTERNATIVES:
         days_to_failure: int,
         message: str,
         requires_service: bool = False,
+        ml_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Create a prediction alert for a vehicle.
@@ -1324,6 +1325,7 @@ ALTERNATIVES:
             days_to_failure: Estimated days until failure
             message: Prediction message
             requires_service: Whether service is required
+            ml_context: Optional ML pipeline values (failure_risk, temperatures, etc.)
 
         Returns:
             Prediction object
@@ -1343,6 +1345,14 @@ ALTERNATIVES:
             "created_at": datetime.now().isoformat(),
         }
 
+        # Add ML context if provided
+        if ml_context:
+            prediction["ml_context"] = ml_context
+            prediction["failure_risk_pct"] = ml_context.get("failure_risk_pct", 0)
+            prediction["brake_temp_c"] = ml_context.get("brake_temp_c", 0)
+            prediction["battery_temp_c"] = ml_context.get("battery_temp_c", 0)
+            prediction["motor_temp_c"] = ml_context.get("motor_temp_c", 0)
+
         # Store prediction
         self.predictions[vehicle_id] = prediction
 
@@ -1357,6 +1367,8 @@ ALTERNATIVES:
             "actions": ["accept", "reject"],
             "timestamp": datetime.now().isoformat(),
         }
+        if ml_context:
+            notification["failure_risk_pct"] = ml_context.get("failure_risk_pct", 0)
         self.add_notification(vehicle_id, notification)
 
         # Log for UEBA
@@ -1367,6 +1379,9 @@ ALTERNATIVES:
                 "vehicle_id": vehicle_id,
                 "prediction_id": prediction_id,
                 "severity": severity,
+                "failure_risk_pct": (
+                    ml_context.get("failure_risk_pct", 0) if ml_context else 0
+                ),
             },
         )
 
