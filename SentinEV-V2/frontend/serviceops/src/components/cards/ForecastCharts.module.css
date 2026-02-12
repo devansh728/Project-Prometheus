@@ -1,0 +1,197 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section {
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.icon {
+  color: var(--color-primary);
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.chartContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 120px;
+  padding: 0 10px;
+}
+
+.barColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.barWrapper {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.bar {
+  width: 60%;
+  max-width: 30px;
+  border-radius: 6px 6px 0 0;
+  transition: background-color 0.3s ease;
+}
+
+.alertIcon {
+  position: absolute;
+  top: 0;
+  color: var(--color-error);
+  animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.utilValue {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.dateLabel {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.recommendationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendationItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-background);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.recommendationItem:hover {
+  background: var(--color-surface-hover);
+}
+
+.recIcon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border-radius: 8px;
+  color: var(--color-primary);
+}
+
+.recContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.partName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  text-transform: capitalize;
+}
+
+.recMessage {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.urgencyBadge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.urgencyBadge[data-urgency="high"],
+.urgencyBadge[data-urgency="critical"] {
+  background: rgba(255, 71, 87, 0.1);
+  color: var(--color-error);
+}
+
+.urgencyBadge[data-urgency="medium"] {
+  background: rgba(255, 165, 2, 0.1);
+  color: var(--color-warning);
+}
+
+.urgencyBadge[data-urgency="low"] {
+  background: rgba(46, 213, 115, 0.1);
+  color: var(--color-success);
+}
+
+.emptyRec {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--color-text-secondary);
+  gap: 8px;
+}
+
+.emptyRec span {
+  font-size: 13px;
+}

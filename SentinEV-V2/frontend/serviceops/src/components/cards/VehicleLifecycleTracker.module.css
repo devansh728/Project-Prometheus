@@ -1,0 +1,210 @@
+/* VehicleLifecycleTracker.module.css */
+.container {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(17, 24, 39, 0.98));
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #F1F5F9;
+  margin: 0;
+}
+
+.count {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.vehicleList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vehicleCard {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(100, 116, 139, 0.15);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vehicleCard:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+}
+
+.vehicleInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.vehicleIcon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.vehicleDetails {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vehicleName {
+  font-size: 15px;
+  font-weight: 700;
+  color: #F1F5F9;
+}
+
+.customerName {
+  font-size: 13px;
+  color: #94A3B8;
+}
+
+.serviceType {
+  font-size: 12px;
+  color: #60A5FA;
+  font-weight: 500;
+}
+
+/* Stage Progress */
+.stageProgress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px 8px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 12px;
+}
+
+.stageItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.stageIconWrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(100, 116, 139, 0.2);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748B;
+  transition: all 0.3s;
+}
+
+.stageItem.completed .stageIconWrapper {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10B981;
+  color: #10B981;
+}
+
+.stageItem.current .stageIconWrapper {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+  border-color: #3B82F6;
+  color: #60A5FA;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
+}
+
+.stageLabel {
+  font-size: 10px;
+  color: #64748B;
+  font-weight: 500;
+  text-align: center;
+}
+
+.stageItem.completed .stageLabel {
+  color: #10B981;
+}
+
+.stageItem.current .stageLabel {
+  color: #60A5FA;
+  font-weight: 600;
+}
+
+.connector {
+  flex: 1;
+  height: 2px;
+  background: rgba(100, 116, 139, 0.2);
+  margin: 0 4px;
+  margin-bottom: 18px;
+}
+
+.connectorCompleted {
+  background: linear-gradient(90deg, #10B981, #34D399);
+}
+
+/* Footer */
+.vehicleFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.eta {
+  font-size: 12px;
+  color: #94A3B8;
+}
+
+.advanceBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #60A5FA;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.advanceBtn:hover {
+  background: rgba(59, 130, 246, 0.25);
+  transform: scale(1.02);
+}
+
+.emptyState {
+  padding: 40px;
+  text-align: center;
+  color: #64748B;
+  font-size: 14px;
+}

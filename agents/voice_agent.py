@@ -859,11 +859,61 @@ Context: The customer has a {alert_type} issue with their EV."""
                 # Calculate scheduled date and time
                 scheduled_date = datetime.now().strftime("%Y-%m-%d")
 
+                # Parse time from context (e.g., "2:30 PM" -> "14:30")
+                slot_time_raw = context.get("slot_time", "14:30")
+                # Simple parsing for common formats
+                if "PM" in slot_time_raw.upper():
+                    hour_str = (
+                        slot_time_raw.upper().replace(" PM", "").replace("PM", "")
+                    )
+                    if ":" in hour_str:
+                        hour, minute = hour_str.split(":")
+                        hour = int(hour)
+                        if hour != 12:
+                            hour += 12
+                        scheduled_time = f"{hour:02d}:{minute}"
+                    else:
+                        hour = int(hour_str)
+                        if hour != 12:
+                            hour += 12
+                        scheduled_time = f"{hour:02d}:00"
+                elif "AM" in slot_time_raw.upper():
+                    hour_str = (
+                        slot_time_raw.upper().replace(" AM", "").replace("AM", "")
+                    )
+                    if ":" in hour_str:
+                        hour, minute = hour_str.split(":")
+                        hour = int(hour) % 12
+                        scheduled_time = f"{hour:02d}:{minute}"
+                    else:
+                        hour = int(hour_str) % 12
+                        scheduled_time = f"{hour:02d}:00"
+                else:
+                    scheduled_time = (
+                        slot_time_raw if ":" in slot_time_raw else f"{slot_time_raw}:00"
+                    )
+
                 # Get a slot ID (create one if needed)
                 slots = db.get_available_slots(center_id="SC-001", date=scheduled_date)
-                slot_id = (
-                    slots[0]["id"] if slots else f"slot-voice-{uuid.uuid4().hex[:8]}"
-                )
+                if slots:
+                    slot_id = slots[0]["id"]
+                else:
+                    # Create a time slot for voice booking since none available
+                    slot_id = f"slot-voice-{uuid.uuid4().hex[:8]}"
+                    # Calculate end time (1 hour after start)
+                    start_hour = int(scheduled_time.split(":")[0])
+                    end_hour = start_hour + 1
+                    end_time = f"{end_hour:02d}:{scheduled_time.split(':')[1]}"
+
+                    db.create_time_slot(
+                        slot_id=slot_id,
+                        center_id="SC-001",
+                        date=scheduled_date,
+                        start_time=scheduled_time,
+                        end_time=end_time,
+                        component_type="brakes",
+                    )
+                    print(f"✅ Created voice booking time slot: {slot_id}")
 
                 # Create the appointment with critical urgency for brake repairs
                 appointment = db.create_appointment(

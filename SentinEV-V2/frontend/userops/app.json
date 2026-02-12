@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "SentinEV",
+    "slug": "sentinev-userops",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.jpg",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A1A2E"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sentinev.userops"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.jpg",
+        "backgroundColor": "#1A1A2E"
+      },
+      "package": "com.sentinev.userops",
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.jpg"
+    },
+    "scheme": "sentinev",
+    "plugins": [
+      "expo-router"
+    ]
+  }
+}

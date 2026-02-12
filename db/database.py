@@ -91,6 +91,7 @@ class ServiceFeedback:
     comments: str
     submitted_at: str
 
+
 @dataclass
 class InventoryItem:
     """Inventory item data model."""
@@ -684,6 +685,30 @@ class Database:
         conn.commit()
         conn.close()
         return success
+
+    def create_time_slot(
+        self,
+        slot_id: str,
+        center_id: str,
+        date: str,
+        start_time: str,
+        end_time: str,
+        component_type: str = "general",
+    ) -> bool:
+        """Create a time slot for emergency/voice bookings."""
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO time_slots 
+            (id, center_id, date, start_time, end_time, available, component_type)
+            VALUES (?, ?, ?, ?, ?, 1, ?)
+            """,
+            (slot_id, center_id, date, start_time, end_time, component_type),
+        )
+        conn.commit()
+        conn.close()
+        return True
 
     # ==================== Appointments ====================
 
@@ -1397,7 +1422,6 @@ class Database:
         conn.commit()
         conn.close()
         return success
-
 
 
 # Singleton instance

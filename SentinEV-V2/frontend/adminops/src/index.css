@@ -1,0 +1,45 @@
+/**
+ * Global CSS - AdminOps Premium Dark Theme
+ */
+
+:root {
+  --color-bg: #050810;
+  --color-surface: #0D1117;
+  --color-surface-elevated: #161B22;
+  --color-card: #1A1F2E;
+  --color-text-primary: #F0F6FC;
+  --color-text-secondary: #8B949E;
+  --color-text-muted: #484F58;
+  --color-primary: #58A6FF;
+  --color-secondary: #A371F7;
+  --color-success: #3FB950;
+  --color-warning: #D29922;
+  --color-danger: #F85149;
+  --color-info: #58A6FF;
+  --color-border: rgba(240, 246, 252, 0.1);
+  --color-glass: rgba(255, 255, 255, 0.03);
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --transition-fast: 150ms ease;
+  --sidebar-width: 240px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; width: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--color-surface); }
+::-webkit-scrollbar-thumb { background: var(--color-text-muted); border-radius: 4px; }

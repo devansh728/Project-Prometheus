@@ -1,0 +1,32 @@
+# SentinEV V2 Backend Dependencies
+
+# Core Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Database
+sqlalchemy>=2.0.25
+alembic>=1.13.0
+
+# Vector DB & Embeddings
+chromadb>=0.4.22
+sentence-transformers>=2.3.0
+
+# Agent Orchestration
+langgraph>=0.2.0
+langchain>=0.1.0
+langchain-google-genai>=1.0.0
+
+# Async & WebSockets
+websockets>=12.0
+httpx>=0.26.0
+
+# Utilities
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+
+# Dev
+pytest>=8.0.0
+pytest-asyncio>=0.23.0

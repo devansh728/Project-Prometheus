@@ -1,0 +1,82 @@
+[
+  {
+    "vehicle_id": "VH004",
+    "service_type": "brake_inspection",
+    "description": "Brake pads replaced due to excessive wear. Front rotors resurfaced.",
+    "cost": 8500.0,
+    "mileage_at_service": 38000,
+    "dtc_codes": ["C0035", "C0040"],
+    "performed_at": "2025-09-15T10:30:00",
+    "service_center_id": "SC001"
+  },
+  {
+    "vehicle_id": "VH008",
+    "service_type": "battery_service",
+    "description": "Battery health check. Cell balancing performed. Warning: battery degraded to 72% capacity.",
+    "cost": 15000.0,
+    "mileage_at_service": 55000,
+    "dtc_codes": ["P0A80", "P0AA6"],
+    "performed_at": "2025-08-20T14:00:00",
+    "service_center_id": "SC003"
+  },
+  {
+    "vehicle_id": "VH006",
+    "service_type": "cooling_system",
+    "description": "Coolant flush and refill. Thermostat replaced. Minor leak in radiator hose patched.",
+    "cost": 6200.0,
+    "mileage_at_service": 30000,
+    "dtc_codes": ["P0128"],
+    "performed_at": "2025-07-10T09:00:00",
+    "service_center_id": "SC002"
+  },
+  {
+    "vehicle_id": "VH010",
+    "service_type": "brake_replacement",
+    "description": "Full brake system overhaul. All pads and rotors replaced. ABS sensor calibrated.",
+    "cost": 22000.0,
+    "mileage_at_service": 72000,
+    "dtc_codes": ["C0035", "C0040", "C0051"],
+    "performed_at": "2025-11-05T11:00:00",
+    "service_center_id": "SC003"
+  },
+  {
+    "vehicle_id": "VH002",
+    "service_type": "routine_maintenance",
+    "description": "Scheduled maintenance at 25,000 km. Tire rotation, cabin filter replaced, brake fluid topped up.",
+    "cost": 3500.0,
+    "mileage_at_service": 25000,
+    "dtc_codes": [],
+    "performed_at": "2025-06-01T10:00:00",
+    "service_center_id": "SC001"
+  },
+  {
+    "vehicle_id": "VH001",
+    "service_type": "routine_maintenance",
+    "description": "15,000 km scheduled service. All systems normal. Software updated to v2.4.",
+    "cost": 2800.0,
+    "mileage_at_service": 15000,
+    "dtc_codes": [],
+    "performed_at": "2026-01-10T09:30:00",
+    "service_center_id": "SC002"
+  },
+  {
+    "vehicle_id": "VH008",
+    "service_type": "emergency_repair",
+    "description": "Emergency battery disconnect after thermal runaway warning. Battery pack replaced under warranty.",
+    "cost": 0.0,
+    "mileage_at_service": 62000,
+    "dtc_codes": ["P0A0D", "P0A80", "P0ABF"],
+    "performed_at": "2025-12-18T16:45:00",
+    "service_center_id": "SC003"
+  },
+  {
+    "vehicle_id": "VH009",
+    "service_type": "brake_inspection",
+    "description": "Brake inspection requested by owner. Pads at 60% life, no action needed. Recommended revisit at 30,000 km.",
+    "cost": 500.0,
+    "mileage_at_service": 22000,
+    "dtc_codes": [],
+    "performed_at": "2026-01-05T14:00:00",
+    "service_center_id": "SC001"
+  }
+]

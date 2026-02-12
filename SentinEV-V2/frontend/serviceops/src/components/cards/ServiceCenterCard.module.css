@@ -1,0 +1,372 @@
+/* ServiceCenterCard.module.css */
+.card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(17, 24, 39, 0.98));
+  border: 1px solid rgba(100, 116, 139, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.card.selected {
+  border-color: var(--color-primary, #3B82F6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.card.compact {
+  padding: 16px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.centerName {
+  font-size: 18px;
+  font-weight: 700;
+  color: #F1F5F9;
+  margin: 0 0 6px 0;
+}
+
+.addressRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94A3B8;
+  font-size: 13px;
+}
+
+.distance {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.headerRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #F59E0B;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.freeSlots {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #10B981;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Capabilities */
+.capabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.capTag {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.capTag.brake { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+.capTag.ev_battery { background: rgba(16, 185, 129, 0.15); color: #34D399; }
+.capTag.electrical { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
+.capTag.cooling { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+.capTag.general { background: rgba(148, 163, 184, 0.15); color: #94A3B8; }
+.capTag.software { background: rgba(139, 92, 246, 0.15); color: #A78BFA; }
+
+/* Sections */
+.section {
+  margin-bottom: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #CBD5E1;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Slot Grid */
+.slotGrid {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 10px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.slotHeader {
+  display: grid;
+  grid-template-columns: 40px repeat(9, 1fr);
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.hourLabel {
+  text-align: center;
+  font-size: 10px;
+  color: #64748B;
+}
+
+.slotRow {
+  display: grid;
+  grid-template-columns: 40px repeat(9, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+
+.dayLabel {
+  font-size: 11px;
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+}
+
+.slot {
+  width: 100%;
+  height: 18px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.slot.available {
+  background: rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+.slot.available:hover {
+  background: rgba(16, 185, 129, 0.5);
+}
+
+.slot.booked {
+  background: rgba(100, 116, 139, 0.2);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+/* Workers Grid */
+.workersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.worker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(30, 41, 59, 0.6);
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+
+.worker.busy {
+  opacity: 0.6;
+}
+
+.workerAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+  font-size: 14px;
+  position: relative;
+}
+
+.statusDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #1E293B;
+}
+
+.statusDot.online { background: #10B981; }
+.statusDot.offline { background: #64748B; }
+
+.workerInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.workerName {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #E2E8F0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.certs {
+  display: flex;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.certBadge {
+  font-size: 9px;
+  padding: 2px 5px;
+  background: rgba(139, 92, 246, 0.2);
+  color: #A78BFA;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Inventory */
+.inventoryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.inventoryItem {
+  background: rgba(15, 23, 42, 0.4);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.inventoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.inventoryHeader span:first-child {
+  color: #94A3B8;
+}
+
+.inventoryQty {
+  font-weight: 700;
+  color: #E2E8F0;
+}
+
+.inventoryBar {
+  height: 6px;
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.inventoryFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.inventoryFill.high { background: linear-gradient(90deg, #10B981, #34D399); }
+.inventoryFill.medium { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+.inventoryFill.low { background: linear-gradient(90deg, #EF4444, #F87171); }
+
+/* Workload Chart */
+.workloadChart {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8px;
+  height: 80px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 10px;
+}
+
+.workloadDay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.workloadBarWrapper {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.workloadBar {
+  width: 80%;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s;
+}
+
+.workloadBar.low { background: linear-gradient(180deg, #10B981, #10B98140); }
+.workloadBar.medium { background: linear-gradient(180deg, #F59E0B, #F59E0B40); }
+.workloadBar.high { background: linear-gradient(180deg, #EF4444, #EF444440); }
+
+.workloadLabel {
+  font-size: 10px;
+  color: #64748B;
+  margin-top: 4px;
+}
+
+/* Select Button */
+.selectBtn {
+  width: 100%;
+  padding: 12px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 10px;
+  color: #60A5FA;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.selectBtn:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.selectedBtn {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #34D399;
+}
