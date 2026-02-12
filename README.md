@@ -177,9 +177,13 @@ The ML subsystem operates at three timescales:
 
 **Training data:** 6 months of synthetic telemetry (CARLA + physics‑based degradation models) for 5 vehicle models, augmented with real service logs from open datasets.
 
+![ML-pipeline](images/ML-pipeline.png)
+
 **RAG Knowledge Base:**  
 - ChromaDB stores embeddings of: vehicle service manuals, technical service bulletins, 10k+ historical RCA records, and CAPA forms.  
 - Retrieved context grounds all agent responses, preventing hallucination and improving trust.
+
+![RAD](images/RAG.png)
 
 ### ServiceOpsAI – Autonomous Service Management
 
