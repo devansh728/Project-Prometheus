@@ -1,8 +1,8 @@
-# 🚗 SentinEV - Agentic AI Predictive Maintenance System
+# 🚗 Project Promethesus - Agentic AI Predictive Maintenance System
 
 > **"Your car talks to you before it breaks down."**
 
-SentinEV is an intelligent **EV predictive maintenance platform** that combines multi-agent AI orchestration, real-time anomaly detection, voice-enabled customer engagement, and manufacturing quality feedback - all working together to keep you safe on the road.
+Project Promethesus is an intelligent **EV predictive maintenance platform** that combines multi-agent AI orchestration, real-time anomaly detection, voice-enabled customer engagement, and manufacturing quality feedback - all working together to keep you safe on the road.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)
@@ -11,9 +11,9 @@ SentinEV is an intelligent **EV predictive maintenance platform** that combines 
 
 ---
 
-## ✨ What Makes SentinEV Special?
+## ✨ What Makes Project Promethesus Special?
 
-Imagine you're driving down a mountain road. Your brakes are overheating, but you don't know it yet. SentinEV does:
+Imagine you're driving down a mountain road. Your brakes are overheating, but you don't know it yet. Project Promethesus does:
 
 1. **🔍 Detects** brake fade through real-time telemetry (temperature spike, efficiency drop)
 2. **🧠 Predicts** potential failure using LSTM-AE + LightGBM models
@@ -32,7 +32,7 @@ Let's follow **Alex** through a real scenario:
 ### Morning: Normal Drive
 ```
 🚗 Alex starts driving to work
-   └── SentinEV monitors 50+ sensors every second
+   └── Project Promethesus monitors 50+ sensors every second
    └── Battery: 78%, Motor: 42°C, Brakes: 35°C
    └── Status: All systems nominal ✅
 ```
@@ -48,9 +48,9 @@ Let's follow **Alex** through a real scenario:
 
 ### 10:35 AM: AI Takes Action
 ```
-📞 SentinEV initiates voice call:
+📞 Project Promethesus initiates voice call:
 
-AGENT: "Hi Alex, this is SentinEV. I need to let you know about 
+AGENT: "Hi Alex, this is Project Promethesus. I need to let you know about 
         an urgent safety situation with your brakes."
 
 ALEX:  "I'm kind of busy right now..."
@@ -92,9 +92,9 @@ AGENT: "Done! You're confirmed for 2:30 PM. I've sent navigation
 
 ---
 
-## 📋 The 13 Phases of SentinEV
+## 📋 The 13 Phases of Project Promethesus
 
-SentinEV was built in 13 progressive phases, each adding critical capabilities:
+Project Promethesus was built in 13 progressive phases, each adding critical capabilities:
 
 ### Foundation (Phases 1-8)
 
@@ -123,7 +123,7 @@ SentinEV was built in 13 progressive phases, each adding critical capabilities:
 
 ## 🤖 Phase 9: Real-Time Orchestrator
 
-The brain of SentinEV - coordinates all agents and routes telemetry efficiently.
+The brain of Project Promethesus - coordinates all agents and routes telemetry efficiently.
 
 ### How It Works
 
@@ -411,8 +411,8 @@ sla_check = {
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/your-repo/SentinEV.git
-cd SentinEV
+git clone https://github.com/your-repo/Project Promethesus.git
+cd Project Promethesus
 
 # Backend
 python -m venv venv
@@ -511,5 +511,5 @@ Built for **EY Techathon 6.0** - Agentic AI Challenge
 ---
 
 <p align="center">
-  <b>SentinEV</b> - Your AI Co-Pilot for Safer Roads 🚗⚡
+  <b>Project Promethesus</b> - Your AI Co-Pilot for Safer Roads 🚗⚡
 </p>
