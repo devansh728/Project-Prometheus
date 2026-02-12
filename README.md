@@ -112,6 +112,8 @@ All agents are defined as **nodes** in a state graph. The Master Agent maintains
               [Manufacturing Quality Insights]   [Service Execution]
 ```
 
+![UserOps](images/userops.png)
+
 ### Master Orchestrator
 
 The **Master Agent** is the brain of Promethesus. It:
@@ -152,6 +154,8 @@ UEBA is implemented as a **sidecar service** that:
 - Intercepts every agent action via LangGraph’s `interrupt` mechanism.
 - Computes anomaly scores using **Isolation Forest** on feature vectors (API endpoints, data accessed, time of day, call frequency).
 - If score > threshold → **block action**, **log alert**, **fallback to deterministic rule**, and **notify admin**.
+
+![AdminOps](images/adminOps.png)
 
 **Integration:**
 ```python
@@ -203,6 +207,8 @@ ServiceOpsAI is a **self‑contained operational intelligence domain** that:
 }
 ```
 
+![ServiceOps](images/serviceops.png)
+
 ### RCA / CAPA Manufacturing Feedback
 
 After each service event:
@@ -213,6 +219,8 @@ After each service event:
 - Recommendations appear in the **AdminOps RCA dashboard** and are optionally pushed to PLM systems.
 
 ---
+
+![AdminOps](images/adminOps.png)
 
 ## End‑to‑End Workflow
 
@@ -232,6 +240,8 @@ After each service event:
 14. **Weekly batch job** clusters RCA patterns → CAPA generated → manufacturing dashboard updated.  
 
 ---
+
+![timeline](images/timeline.png)
 
 ## Demo Walkthrough (6‑minute video script alignment)
 
