@@ -265,6 +265,9 @@ Our live demo video walks through the exact journey above, with **timed overlays
 - **6:16–6:30** – UEBA blocks Scheduling Agent’s telemetry access attempt  
 - **6:31–6:45** – Closing statement  
 
+[![Video Thumbnail](https://img.youtube.com/vi/oOpvCvKGjvM/0.jpg)](https://www.youtube.com/watch?v=oOpvCvKGjvM)
+
+
 ---
 
 ## Edge Cases & Realism
